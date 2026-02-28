@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/tvGreeting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Student Dashboard"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Confirming meals for Tomorrow"
+            android:textSize="16sp"
+            android:textColor="@color/material_dynamic_neutral50"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Select Meal Type -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1. Select Meal"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/cgMealType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            android:layout_marginBottom="24dp">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipBreakfast"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Breakfast"
+                style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipLunch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Lunch"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:checked="true"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipDinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dinner"
+                style="@style/Widget.MaterialComponents.Chip.Choice"/>
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- Eat or Not Eat -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2. Will you eat?"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp"/>
+
+        <RadioGroup
+            android:id="@+id/rgStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="24dp">
+
+            <RadioButton
+                android:id="@+id/rbEat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Yes, I'll Eat"
+                android:checked="true"
+                android:layout_weight="1"/>
+
+            <RadioButton
+                android:id="@+id/rbNotEat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No, Skipping"
+                android:layout_weight="1"/>
+        </RadioGroup>
+
+        <!-- Time Slot Selection -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="3. Select Time Slot"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp"/>
+
+        <Spinner
+            android:id="@+id/spinnerTimeSlot"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@android:drawable/btn_dropdown"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Deadline Warning -->
+        <TextView
+            android:id="@+id/tvDeadlineWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Note: Changes lock at 10:00 PM tonight."
+            android:textColor="#D32F2F"
+            android:textAlignment="center"
+            android:textStyle="italic"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Submit Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSubmitConfirmation"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Save Confirmation"
+            android:textSize="18sp"
+            app:cornerRadius="8dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Phase 5: QR Scanner Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnScanQR"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Scan QR to Enter Mess"
+            android:textSize="18sp"
+            app:cornerRadius="8dp"
+            app:icon="@android:drawable/ic_menu_camera"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_marginBottom="16dp"/>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+        <!-- Logout Button -->
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Log Out"
+            style="?attr/materialButtonOutlinedStyle"
+            app:strokeColor="@color/black"
+            android:textColor="@color/black"/>
+
+    </LinearLayout>
+</ScrollView>
