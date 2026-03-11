@@ -1,17 +1,25 @@
 package com.example.smartmess;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.Manifest;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
+import android.widget.RatingBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.example.smartmess.models.Confirmation;
 import com.google.android.material.button.MaterialButton;
@@ -23,7 +31,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import androidx.activity.result.ActivityResultLauncher;
 import com.journeyapps.barcodescanner.ScanContract;
@@ -32,10 +43,12 @@ import com.journeyapps.barcodescanner.ScanOptions;
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvGreeting, tvDate;
+    private TextView tvMenuBreakfast, tvMenuLunch, tvMenuDinner;
     private ChipGroup cgMealType;
     private RadioGroup rgStatus;
-    private Spinner spinnerTimeSlot;
-    private MaterialButton btnSubmitConfirmation, btnScanQR;
+    private Spinner spinnerTimeSlot, spinnerRatingMeal;
+    private RatingBar ratingBarMeal;
+    private MaterialButton btnSubmitConfirmation, btnScanQR, btnSubmitRating;
     private Button btnLogout;
     private ProgressBar progressBar;
 
@@ -78,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
         initializeViews();
         setupSpinner();
         loadGreetingAndDate();
+        loadTodaysMenu();
+        checkNotificationPermission();
+        scheduleMealReminder();
 
         btnLogout.setOnClickListener(v -> {
             mAuth.signOut();
@@ -86,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnSubmitConfirmation.setOnClickListener(v -> submitMealConfirmation());
+        btnSubmitRating.setOnClickListener(v -> submitMealRating());
 
         // Launch Scanner
         btnScanQR.setOnClickListener(v -> {
@@ -99,14 +116,58 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
+    }
+
+    private void scheduleMealReminder() {
+        Calendar currentDate = Calendar.getInstance();
+        Calendar dueDate = Calendar.getInstance();
+
+        // Set Execution around 08:00:00 PM
+        dueDate.set(Calendar.HOUR_OF_DAY, 20);
+        dueDate.set(Calendar.MINUTE, 0);
+        dueDate.set(Calendar.SECOND, 0);
+
+        if (dueDate.before(currentDate)) {
+            dueDate.add(Calendar.HOUR_OF_DAY, 24);
+        }
+
+        long timeDiff = dueDate.getTimeInMillis() - currentDate.getTimeInMillis();
+
+        PeriodicWorkRequest dailyWorkRequest = new PeriodicWorkRequest.Builder(
+                MealReminderWorker.class, 24, TimeUnit.HOURS)
+                .setInitialDelay(timeDiff, TimeUnit.MILLISECONDS)
+                .build();
+
+        WorkManager.getInstance(this)
+                .enqueueUniquePeriodicWork("MealReminderWork", 
+                ExistingPeriodicWorkPolicy.KEEP, 
+                dailyWorkRequest);
+    }
+
     private void initializeViews() {
         tvGreeting = findViewById(R.id.tvGreeting);
         tvDate = findViewById(R.id.tvDate);
+        
+        tvMenuBreakfast = findViewById(R.id.tvMenuBreakfast);
+        tvMenuLunch = findViewById(R.id.tvMenuLunch);
+        tvMenuDinner = findViewById(R.id.tvMenuDinner);
+        
         cgMealType = findViewById(R.id.cgMealType);
         rgStatus = findViewById(R.id.rgStatus);
+        
         spinnerTimeSlot = findViewById(R.id.spinnerTimeSlot);
+        spinnerRatingMeal = findViewById(R.id.spinnerRatingMeal);
+        ratingBarMeal = findViewById(R.id.ratingBarMeal);
+        
         btnSubmitConfirmation = findViewById(R.id.btnSubmitConfirmation);
         btnScanQR = findViewById(R.id.btnScanQR);
+        btnSubmitRating = findViewById(R.id.btnSubmitRating);
         btnLogout = findViewById(R.id.btnLogout);
         progressBar = findViewById(R.id.progressBar);
     }
@@ -114,8 +175,12 @@ public class MainActivity extends AppCompatActivity {
     private void setupSpinner() {
         String[] slots = new String[] { "Select Time", "7:00 AM - 8:00 AM", "8:00 AM - 9:00 AM", "12:00 PM - 1:00 PM",
                 "1:00 PM - 2:00 PM", "7:00 PM - 8:00 PM", "8:00 PM - 9:00 PM" };
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, slots);
-        spinnerTimeSlot.setAdapter(adapter);
+        ArrayAdapter<String> timeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, slots);
+        spinnerTimeSlot.setAdapter(timeAdapter);
+
+        String[] ratingMeals = new String[] { "Breakfast", "Lunch", "Dinner" };
+        ArrayAdapter<String> mealAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, ratingMeals);
+        spinnerRatingMeal.setAdapter(mealAdapter);
     }
 
     private void loadGreetingAndDate() {
@@ -186,5 +251,61 @@ public class MainActivity extends AppCompatActivity {
         progressBar.setVisibility(View.GONE);
         btnSubmitConfirmation.setEnabled(true);
         Toast.makeText(MainActivity.this, "Meal Confirmed Successfully!", Toast.LENGTH_SHORT).show();
+    }
+
+    private void loadTodaysMenu() {
+        String todayDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        
+        db.collection("weekly_menu").document(todayDate).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String b = documentSnapshot.getString("breakfast");
+                        String l = documentSnapshot.getString("lunch");
+                        String d = documentSnapshot.getString("dinner");
+                        
+                        tvMenuBreakfast.setText("Breakfast: " + (b != null && !b.isEmpty() ? b : "Not Set"));
+                        tvMenuLunch.setText("Lunch: " + (l != null && !l.isEmpty() ? l : "Not Set"));
+                        tvMenuDinner.setText("Dinner: " + (d != null && !d.isEmpty() ? d : "Not Set"));
+                    } else {
+                        tvMenuBreakfast.setText("Breakfast: Not uploaded yet");
+                        tvMenuLunch.setText("Lunch: Not uploaded yet");
+                        tvMenuDinner.setText("Dinner: Not uploaded yet");
+                    }
+                });
+    }
+
+    private void submitMealRating() {
+        String mealType = spinnerRatingMeal.getSelectedItem().toString().toLowerCase();
+        float rating = ratingBarMeal.getRating();
+        String userId = mAuth.getCurrentUser().getUid();
+        
+        // Save rating for 'today'
+        String todayDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        
+        progressBar.setVisibility(View.VISIBLE);
+        btnSubmitRating.setEnabled(false);
+
+        Map<String, Object> ratingData = new HashMap<>();
+        ratingData.put("userId", userId);
+        ratingData.put("mealType", mealType);
+        ratingData.put("rating", rating);
+        ratingData.put("date", todayDate);
+        ratingData.put("timestamp", System.currentTimeMillis());
+
+        db.collection("meal_ratings")
+                .document(todayDate)
+                .collection(mealType)
+                .document(userId) // One rating per user per meal type per day
+                .set(ratingData)
+                .addOnSuccessListener(aVoid -> {
+                    progressBar.setVisibility(View.GONE);
+                    btnSubmitRating.setEnabled(true);
+                    Toast.makeText(MainActivity.this, "Rating Submitted! Thank you.", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    progressBar.setVisibility(View.GONE);
+                    btnSubmitRating.setEnabled(true);
+                    Toast.makeText(MainActivity.this, "Failed to submit rating.", Toast.LENGTH_SHORT).show();
+                });
     }
 }

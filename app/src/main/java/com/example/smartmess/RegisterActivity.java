@@ -113,17 +113,14 @@ public class RegisterActivity extends AppCompatActivity {
             db.collection("users").document(userId).set(newUser);
 
             progressBar.setVisibility(View.GONE);
-            Toast.makeText(RegisterActivity.this, "Account Created Successfully!", Toast.LENGTH_LONG).show();
+            Toast.makeText(RegisterActivity.this, "Account Created Successfully! Please login.", Toast.LENGTH_LONG).show();
 
-            // Send them to correct dashboard
-            Intent intent;
-            if ("admin".equals(role)) {
-                intent = new Intent(RegisterActivity.this, AdminActivity.class);
-            } else if ("staff".equals(role)) {
-                intent = new Intent(RegisterActivity.this, StaffActivity.class);
-            } else {
-                intent = new Intent(RegisterActivity.this, MainActivity.class);
-            }
+            // Firebase Auth automatically signs in the created user. 
+            // We must sign them out so they hit the login screen properly.
+            mAuth.signOut();
+
+            // Send them to login page
+            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
             startActivity(intent);
             finish();
 

@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Deep Blue Primary Theme -->
+    <color name="colorPrimary">#1E3A8A</color>
+    <color name="colorPrimaryVariant">#1E40AF</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+
+    <color name="colorSecondary">#3B82F6</color>
+    <color name="colorSecondaryVariant">#2563EB</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
+
+    <color name="colorError">#EF4444</color>
+    <color name="colorOnError">#FFFFFF</color>
+
+    <color name="colorBackground">#F8FAFC</color> <!-- Light grayish blue background -->
+    <color name="colorOnBackground">#0F172A</color> <!-- Dark text -->
+    <color name="colorSurface">#FFFFFF</color> <!-- Card backgrounds -->
+    <color name="colorOnSurface">#1E293B</color>
+
+    <!-- Original Base Colors for Fallback -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="primary_premium">#432C7A</color> <!-- Deep Slate Purple -->

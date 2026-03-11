@@ -1,0 +1,39 @@
+Initialized native services in: C:\Users\medeh\.gradle\native
+Initialized jansi services in: C:\Users\medeh\.gradle\native
+The client will now receive all logging from the daemon (pid: 18528). The daemon log file: C:\Users\medeh\.gradle\daemon\9.2.1\daemon-18528.out.log
+Starting 9th build in daemon [uptime: 10 mins 51.541 secs, performance: 99%, GC rate: 0.00/s, heap usage: 0% of 2 GiB]
+Using 12 worker leases.
+Operational build model parameters: {requiresToolingModels=false, parallelProjectExecution=false, configureOnDemand=false, configurationCache=false, configurationCacheParallelStore=false, configurationCacheParallelLoad=true, isolatedProjects=false, parallelProjectConfiguration=false, intermediateModelCache=false, parallelToolingApiActions=false, invalidateCoupledProjects=false, modelAsProjectDependency=false, resilientModelBuilding=false}
+Now considering [C:\Users\medeh\OneDrive\Desktop\app development\Smart-Mess] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Resolved plugin [id: 'org.gradle.toolchains.foojay-resolver-convention', version: '1.0.0']
+Settings evaluated using settings file 'C:\Users\medeh\OneDrive\Desktop\app development\Smart-Mess\settings.gradle'.
+Projects loaded. Root project using build file 'C:\Users\medeh\OneDrive\Desktop\app development\Smart-Mess\build.gradle'.
+Included projects: [root project 'Smart Mess', project ':app']
+
+> Configure project :
+Evaluating root project 'Smart Mess' using build file 'C:\Users\medeh\OneDrive\Desktop\app development\Smart-Mess\build.gradle'.
+Resolved plugin [id: 'com.android.application', version: '9.0.1', apply: false]
+Resolved plugin [id: 'com.google.gms.google-services', version: '4.4.1', apply: false]
+
+> Configure project :app
+Evaluating project ':app' using build file 'C:\Users\medeh\OneDrive\Desktop\app development\Smart-Mess\app\build.gradle'.
+Resolved plugin [id: 'com.android.application', version: '9.0.1']
+Resolved plugin [id: 'com.google.gms.google-services']
+Build 5259f77a-6cf8-4b4a-8cde-3c98189da655 is started
+Using default execution profile
+All projects evaluated.
+Task name matched 'assembleDebug'
+Selected primary task 'assembleDebug' from project :
+Build 5259f77a-6cf8-4b4a-8cde-3c98189da655 is closed
+
+[Incubating] Problems report is available at: file:///C:/Users/medeh/OneDrive/Desktop/app%20development/Smart-Mess/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+Watched directory hierarchies: []

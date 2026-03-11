@@ -36,7 +36,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardElevation="2dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/material_dynamic_neutral90"
             android:layout_marginBottom="24dp">
 
             <LinearLayout
@@ -85,7 +87,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardElevation="2dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/material_dynamic_neutral90"
             android:layout_marginBottom="24dp">
 
             <LinearLayout
@@ -154,14 +158,15 @@
             android:layout_weight="1"/>
 
         <!-- Logout Button -->
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="60dp"
             android:text="Log Out"
-            style="?attr/materialButtonOutlinedStyle"
-            app:strokeColor="@color/black"
-            android:textColor="@color/black"/>
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            app:cornerRadius="8dp"
+            app:strokeColor="@color/colorPrimary"
+            android:textColor="@color/colorPrimary"/>
 
     </LinearLayout>
 </ScrollView>

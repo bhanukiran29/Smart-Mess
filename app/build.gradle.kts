@@ -52,4 +52,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-messaging")
+
+    // Add WorkManager for background jobs
+    implementation("androidx.work:work-runtime:2.9.0")
 }

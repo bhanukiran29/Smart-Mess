@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
@@ -24,7 +25,8 @@ import java.util.Locale;
 public class AdminActivity extends AppCompatActivity {
 
     private TextView tvGreeting, tvBreakfastCount, tvLunchCount, tvDinnerCount;
-    private MaterialButton btnGenerateReport;
+    private TextView tvRatingBreakfast, tvRatingLunch, tvRatingDinner;
+    private MaterialButton btnGenerateReport, btnManageMenu;
     private Button btnLogout;
     private ProgressBar progressBar;
 
@@ -49,6 +51,7 @@ public class AdminActivity extends AppCompatActivity {
         initializeViews();
         loadGreeting();
         fetchMealCounts();
+        fetchMealRatings();
 
         btnLogout.setOnClickListener(v -> {
             mAuth.signOut();
@@ -58,6 +61,10 @@ public class AdminActivity extends AppCompatActivity {
 
         btnGenerateReport.setOnClickListener(v -> {
             generatePdfReport();
+        });
+
+        btnManageMenu.setOnClickListener(v -> {
+            startActivity(new Intent(AdminActivity.this, MenuActivity.class));
         });
     }
 
@@ -108,7 +115,13 @@ public class AdminActivity extends AppCompatActivity {
         tvBreakfastCount = findViewById(R.id.tvBreakfastCount);
         tvLunchCount = findViewById(R.id.tvLunchCount);
         tvDinnerCount = findViewById(R.id.tvDinnerCount);
+        
+        tvRatingBreakfast = findViewById(R.id.tvRatingBreakfast);
+        tvRatingLunch = findViewById(R.id.tvRatingLunch);
+        tvRatingDinner = findViewById(R.id.tvRatingDinner);
+        
         btnGenerateReport = findViewById(R.id.btnGenerateReport);
+        btnManageMenu = findViewById(R.id.btnManageMenu);
         btnLogout = findViewById(R.id.btnLogout);
         progressBar = findViewById(R.id.progressBar);
 
@@ -172,5 +185,46 @@ public class AdminActivity extends AppCompatActivity {
                         tvDinnerCount.setText("Error");
                     }
                 });
+    }
+
+    private void fetchMealRatings() {
+        String todayDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+
+        // Fetch Breakfast Ratings
+        db.collection("meal_ratings").document(todayDate).collection("breakfast").get()
+                .addOnSuccessListener(queryDocumentSnapshots -> calculateAverageRating(queryDocumentSnapshots, tvRatingBreakfast));
+
+        // Fetch Lunch Ratings
+        db.collection("meal_ratings").document(todayDate).collection("lunch").get()
+                .addOnSuccessListener(queryDocumentSnapshots -> calculateAverageRating(queryDocumentSnapshots, tvRatingLunch));
+
+        // Fetch Dinner Ratings
+        db.collection("meal_ratings").document(todayDate).collection("dinner").get()
+                .addOnSuccessListener(queryDocumentSnapshots -> calculateAverageRating(queryDocumentSnapshots, tvRatingDinner));
+    }
+
+    private void calculateAverageRating(QuerySnapshot snapshots, TextView targetView) {
+        if (snapshots.isEmpty()) {
+            targetView.setText("N/A");
+            return;
+        }
+
+        float totalRating = 0;
+        int count = 0;
+
+        for (DocumentSnapshot doc : snapshots) {
+            Double rating = doc.getDouble("rating");
+            if (rating != null) {
+                totalRating += rating;
+                count++;
+            }
+        }
+
+        if (count > 0) {
+            float average = totalRating / count;
+            targetView.setText(String.format(Locale.getDefault(), "%.1f (%d votes)", average, count));
+        } else {
+            targetView.setText("N/A");
+        }
     }
 }
