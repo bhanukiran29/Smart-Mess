@@ -1,20 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.SmartMess" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <style name="Base.Theme.SmartMess" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
-        <item name="colorOnPrimary">@color/colorOnPrimary</item>
-        
-        <item name="colorSecondary">@color/colorSecondary</item>
-        <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item>
-        <item name="colorOnSecondary">@color/colorOnSecondary</item>
-        
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-        
-        <!-- Text and Background -->
-        <item name="android:colorBackground">@color/colorBackground</item>
-        <item name="android:textColorPrimary">@color/colorOnBackground</item>
+        <item name="colorPrimary">@color/primary_premium</item>
+        <item name="colorPrimaryVariant">@color/primary_premium</item>
+        <item name="colorOnPrimary">@color/white</item>
     </style>
 
     <style name="Theme.SmartMess" parent="Base.Theme.SmartMess" />

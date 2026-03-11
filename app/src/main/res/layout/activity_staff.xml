@@ -58,9 +58,17 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Generate a dynamic QR code for students to scan upon entry."
+                    android:text="Select meal, then generate QR for students to scan at entry."
                     android:textColor="@color/material_dynamic_neutral50"
-                    android:layout_marginBottom="16dp"/>
+                    android:layout_marginBottom="12dp"/>
+
+                <!-- Meal selector for QR -->
+                <Spinner
+                    android:id="@+id/spinnerMealType"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@android:drawable/btn_dropdown"
+                    android:layout_marginBottom="12dp"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnGenerateQR"
@@ -78,6 +86,103 @@
                     android:layout_gravity="center"
                     android:visibility="gone"
                     android:contentDescription="Generated QR Code"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Live Capacity Counter Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardElevation="2dp"
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/material_dynamic_neutral90"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🚦 Live Capacity Counter"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Students scanned in vs. total capacity today"
+                    android:textSize="12sp"
+                    android:textColor="@color/material_dynamic_neutral50"
+                    android:layout_marginBottom="16dp"/>
+
+                <!-- Breakfast row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🌅 Breakfast"
+                        android:textSize="15sp"/>
+                    <TextView
+                        android:id="@+id/tvBreakfastCounter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Loading…"
+                        android:textStyle="bold"
+                        android:textSize="15sp"/>
+                </LinearLayout>
+
+                <!-- Lunch row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="☀️ Lunch"
+                        android:textSize="15sp"/>
+                    <TextView
+                        android:id="@+id/tvLunchCounter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Loading…"
+                        android:textStyle="bold"
+                        android:textSize="15sp"/>
+                </LinearLayout>
+
+                <!-- Dinner row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🌙 Dinner"
+                        android:textSize="15sp"/>
+                    <TextView
+                        android:id="@+id/tvDinnerCounter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Loading…"
+                        android:textStyle="bold"
+                        android:textSize="15sp"/>
+                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

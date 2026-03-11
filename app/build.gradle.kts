@@ -55,4 +55,7 @@ dependencies {
 
     // Add WorkManager for background jobs
     implementation("androidx.work:work-runtime:2.9.0")
+
+    // MPAndroidChart for interactive bar charts
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }

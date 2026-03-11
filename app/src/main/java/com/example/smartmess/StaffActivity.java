@@ -4,8 +4,11 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,6 +19,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
@@ -34,12 +38,17 @@ public class StaffActivity extends AppCompatActivity {
     private Button btnLogout;
     private ProgressBar progressBar;
     private TextView tvGreeting;
-
+    private Spinner spinnerMealType;
     private ImageView ivQrCode;
+
+    // Live counter TextViews
+    private TextView tvBreakfastCounter, tvLunchCounter, tvDinnerCounter;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private String currentDate;
+    private String selectedMeal = "breakfast"; // default
+    private ListenerRegistration counterListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +66,14 @@ public class StaffActivity extends AppCompatActivity {
 
         initializeViews();
         loadGreetingAndDate();
+        listenToLiveCapacity();
+
+        spinnerMealType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                selectedMeal = parent.getItemAtPosition(pos).toString().toLowerCase();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
 
         btnLogout.setOnClickListener(v -> {
             mAuth.signOut();
@@ -64,7 +81,7 @@ public class StaffActivity extends AppCompatActivity {
             finish();
         });
 
-        // Generate dynamic QR Code for the specific date
+        // Generate dynamic QR Code for the specific meal + date
         btnGenerateQR.setOnClickListener(v -> generateQRCode());
 
         btnSubmitWaste.setOnClickListener(v -> submitWasteData());
@@ -72,9 +89,9 @@ public class StaffActivity extends AppCompatActivity {
 
     private void generateQRCode() {
         try {
-            // Encode the current date as the QR data (you could make this more
-            // secure/complex later)
-            String qrData = "SMART_MESS_" + currentDate;
+            // QR format: SMART_MESS_{mealType}_{date}
+            // e.g.  SMART_MESS_lunch_2025-03-12
+            String qrData = "SMART_MESS_" + selectedMeal + "_" + currentDate;
 
             BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
             Bitmap bitmap = barcodeEncoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 600, 600);
@@ -82,7 +99,7 @@ public class StaffActivity extends AppCompatActivity {
             ivQrCode.setImageBitmap(bitmap);
             ivQrCode.setVisibility(View.VISIBLE);
 
-            Toast.makeText(this, "Session QR Code Generated!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, selectedMeal.toUpperCase() + " QR Generated!", Toast.LENGTH_SHORT).show();
         } catch (WriterException e) {
             Toast.makeText(this, "Error generating QR: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
@@ -97,6 +114,15 @@ public class StaffActivity extends AppCompatActivity {
         btnLogout = findViewById(R.id.btnLogout);
         progressBar = findViewById(R.id.progressBar);
         ivQrCode = findViewById(R.id.ivQrCode);
+        spinnerMealType = findViewById(R.id.spinnerMealType);
+        tvBreakfastCounter = findViewById(R.id.tvBreakfastCounter);
+        tvLunchCounter     = findViewById(R.id.tvLunchCounter);
+        tvDinnerCounter    = findViewById(R.id.tvDinnerCounter);
+
+        ArrayAdapter<String> mealAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"Breakfast", "Lunch", "Dinner"});
+        spinnerMealType.setAdapter(mealAdapter);
     }
 
     private void loadGreetingAndDate() {
@@ -111,6 +137,52 @@ public class StaffActivity extends AppCompatActivity {
                 });
 
         currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+    }
+
+    // -----------------------------------------------------------------------
+    // Live Capacity Counter — real-time Firestore listener
+    // Firestore path: meal_capacity/{date}  →
+    //   { breakfast_scanned: 0, breakfast_capacity: 90,
+    //     lunch_scanned: 0,     lunch_capacity: 120,
+    //     dinner_scanned: 0,    dinner_capacity: 80 }
+    // -----------------------------------------------------------------------
+    private void listenToLiveCapacity() {
+        counterListener = db.collection("meal_capacity").document(currentDate)
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null || snapshot == null) return;
+
+                    updateCounter(tvBreakfastCounter, snapshot.getLong("breakfast_scanned"),
+                            snapshot.getLong("breakfast_capacity"));
+                    updateCounter(tvLunchCounter, snapshot.getLong("lunch_scanned"),
+                            snapshot.getLong("lunch_capacity"));
+                    updateCounter(tvDinnerCounter, snapshot.getLong("dinner_scanned"),
+                            snapshot.getLong("dinner_capacity"));
+                });
+    }
+
+    private void updateCounter(TextView tv, Long scanned, Long capacity) {
+        if (capacity == null || capacity == 0) {
+            tv.setText("Not set");
+            tv.setTextColor(getColor(android.R.color.darker_gray));
+            return;
+        }
+        long s = scanned != null ? scanned : 0;
+        String label = s + " / " + capacity;
+        tv.setText(label);
+        // Colour code: green if plenty of space, orange if nearly full, red if full
+        if (s >= capacity) {
+            tv.setTextColor(getColor(android.R.color.holo_red_dark));
+        } else if (s >= capacity * 0.85) {
+            tv.setTextColor(getColor(android.R.color.holo_orange_dark));
+        } else {
+            tv.setTextColor(getColor(android.R.color.holo_green_dark));
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (counterListener != null) counterListener.remove();
     }
 
     private void submitWasteData() {

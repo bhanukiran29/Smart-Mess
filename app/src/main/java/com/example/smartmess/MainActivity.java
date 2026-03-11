@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import androidx.activity.result.ActivityResultLauncher;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
+import com.google.firebase.firestore.FieldValue;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,7 +49,8 @@ public class MainActivity extends AppCompatActivity {
     private RadioGroup rgStatus;
     private Spinner spinnerTimeSlot, spinnerRatingMeal;
     private RatingBar ratingBarMeal;
-    private MaterialButton btnSubmitConfirmation, btnScanQR, btnSubmitRating;
+    private MaterialButton btnSubmitConfirmation, btnScanQR, btnSubmitRating, btnWallet,
+            btnMealHistory, btnProfile, btnFeedback;
     private Button btnLogout;
     private ProgressBar progressBar;
 
@@ -60,17 +62,9 @@ public class MainActivity extends AppCompatActivity {
     private final ActivityResultLauncher<ScanOptions> barcodeLauncher = registerForActivityResult(new ScanContract(),
             result -> {
                 if (result.getContents() == null) {
-                    Toast.makeText(MainActivity.this, "Cancelled", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Cancelled", Toast.LENGTH_SHORT).show();
                 } else {
-                    String scannedData = result.getContents();
-                    String expectedQrStart = "SMART_MESS_";
-
-                    if (scannedData.startsWith(expectedQrStart)) {
-                        Toast.makeText(MainActivity.this, "Attendance Logged Successfully!", Toast.LENGTH_LONG).show();
-                        // Real logic could log the scan event to Firestore here
-                    } else {
-                        Toast.makeText(MainActivity.this, "Invalid QR Code", Toast.LENGTH_LONG).show();
-                    }
+                    processQrScan(result.getContents());
                 }
             });
 
@@ -104,16 +98,192 @@ public class MainActivity extends AppCompatActivity {
         btnSubmitConfirmation.setOnClickListener(v -> submitMealConfirmation());
         btnSubmitRating.setOnClickListener(v -> submitMealRating());
 
+        // Open Wallet screen
+        btnWallet.setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, WalletActivity.class)));
+
+        // Meal History
+        btnMealHistory.setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, MealHistoryActivity.class)));
+
+        // Profile
+        btnProfile.setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, ProfileActivity.class)));
+
+        // Feedback
+        btnFeedback.setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, FeedbackActivity.class)));
+
         // Launch Scanner
         btnScanQR.setOnClickListener(v -> {
             ScanOptions options = new ScanOptions();
             options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
             options.setPrompt("Scan the Session QR Code at the entrance");
-            options.setCameraId(0); // Use a specific camera of the device
+            options.setCameraId(0);
             options.setBeepEnabled(false);
             options.setBarcodeImageEnabled(true);
             barcodeLauncher.launch(options);
         });
+    }
+
+    // -----------------------------------------------------------------------
+    // Walk-in Payment Logic
+    // QR format expected:  SMART_MESS_{mealType}_{date}
+    //   e.g.  SMART_MESS_lunch_2025-03-12
+    //
+    // Time windows (enforced):
+    //   Breakfast  06:00 – 10:00
+    //   Lunch      11:00 – 15:00
+    //   Dinner     18:00 – 22:00
+    // -----------------------------------------------------------------------
+    private void processQrScan(String rawData) {
+        if (!rawData.startsWith("SMART_MESS_")) {
+            Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String[] parts = rawData.split("_");
+        if (parts.length < 4) {
+            Toast.makeText(this, "QR format error", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String mealType = parts[2].toLowerCase();
+        String mealDate = parts[3];
+        String userId   = mAuth.getCurrentUser().getUid();
+
+        // ---- QR Time-Window Lock ----
+        if (!isMealTimeValid(mealType)) {
+            Toast.makeText(this,
+                    "🕐 " + capitalize(mealType) + " entry is not open right now.\n"
+                    + mealTimeWindow(mealType),
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Step 1 – Check live capacity FIRST before anything else
+        db.collection("meal_capacity").document(mealDate).get()
+                .addOnSuccessListener(capSnap -> {
+                    Long capacity = capSnap.getLong(mealType + "_capacity");
+                    Long scanned  = capSnap.getLong(mealType + "_scanned");
+                    long scannedIn = scanned != null ? scanned : 0;
+
+                    if (capacity != null && capacity > 0 && scannedIn >= capacity) {
+                        // 🚫 Food is full — reject immediately
+                        Toast.makeText(this,
+                                "🚫 Sorry! " + mealType.toUpperCase() + " is full. " +
+                                "(" + scannedIn + "/" + capacity + " plates served). " +
+                                "No food remaining.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    // Step 2 – Capacity OK. Check if student pre-confirmed this meal
+                    db.collection("confirmations")
+                            .document(mealDate)
+                            .collection(mealType)
+                            .document(userId)
+                            .get()
+                            .addOnSuccessListener(snapshot -> {
+                                if (snapshot.exists() && "eat".equals(snapshot.getString("status"))) {
+                                    // ✅ Pre-confirmed – free entry
+                                    logAttendanceAndIncrement(userId, mealType, mealDate, false);
+                                    Toast.makeText(this,
+                                            "✅ Meal Confirmed! Enjoy your " + mealType + "!",
+                                            Toast.LENGTH_LONG).show();
+                                } else {
+                                    // ❌ Walk-in – try wallet deduction
+                                    attemptWalletDeduction(userId, mealType, mealDate);
+                                }
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Network error. Try again.", Toast.LENGTH_SHORT).show());
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Could not check capacity. Try again.", Toast.LENGTH_SHORT).show());
+    }
+
+    private static final double WALKIN_CHARGE = 50.0; // ₹50 per unconfirmed walk-in
+
+    /** Returns true if the current time is within the allowed entry window for this meal */
+    private boolean isMealTimeValid(String mealType) {
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        switch (mealType) {
+            case "breakfast": return hour >= 6  && hour < 10;
+            case "lunch":     return hour >= 11 && hour < 15;
+            case "dinner":    return hour >= 18 && hour < 22;
+            default: return true;
+        }
+    }
+
+    private String mealTimeWindow(String mealType) {
+        switch (mealType) {
+            case "breakfast": return "Breakfast entry: 6:00 AM – 10:00 AM";
+            case "lunch":     return "Lunch entry: 11:00 AM – 3:00 PM";
+            case "dinner":    return "Dinner entry: 6:00 PM – 10:00 PM";
+            default: return "";
+        }
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.isEmpty()) return "";
+        return s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+
+    private void attemptWalletDeduction(String userId, String mealType, String mealDate) {
+        db.collection("wallets").document(userId).get()
+                .addOnSuccessListener(snapshot -> {
+                    double balance = 0;
+                    if (snapshot.exists() && snapshot.getDouble("balance") != null) {
+                        balance = snapshot.getDouble("balance");
+                    }
+
+                    if (balance >= WALKIN_CHARGE) {
+                        // Sufficient balance – deduct atomically
+                        db.collection("wallets").document(userId)
+                                .update(
+                                        "balance", FieldValue.increment(-WALKIN_CHARGE),
+                                        "lastUpdated", System.currentTimeMillis()
+                                ).addOnSuccessListener(aVoid -> {
+                                    logAttendanceAndIncrement(userId, mealType, mealDate, true);
+                                    // Log deduction in transaction history
+                                    WalletActivity.logTransaction(db, userId,
+                                            "deduction", WALKIN_CHARGE,
+                                            "Walk-in " + capitalize(mealType) + " • " + mealDate);
+                                    Toast.makeText(this,
+                                            "💳 Walk-in: ₹50 deducted. Enjoy your " + mealType + "!",
+                                            Toast.LENGTH_LONG).show();
+                                });
+                    } else {
+                        // Insufficient balance – deny entry
+                        Toast.makeText(this,
+                                "❌ Insufficient wallet balance (₹" + String.format("%.0f", balance)
+                                        + "). Please top up in My Wallet.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Could not verify wallet. Try again.", Toast.LENGTH_SHORT).show());
+    }
+
+    /** Logs attendance AND atomically increments the scanned-in counter */
+    private void logAttendanceAndIncrement(String userId, String mealType, String mealDate, boolean isWalkin) {
+        // Log the individual attendance record
+        Map<String, Object> log = new HashMap<>();
+        log.put("userId",    userId);
+        log.put("mealType",  mealType);
+        log.put("date",      mealDate);
+        log.put("isWalkin",  isWalkin);
+        log.put("timestamp", System.currentTimeMillis());
+
+        db.collection("scanLogs")
+                .document(mealDate)
+                .collection(mealType)
+                .document(userId)
+                .set(log);
+
+        // Atomically increment the capacity counter so the live counter updates in real-time
+        db.collection("meal_capacity").document(mealDate)
+                .update(mealType + "_scanned", FieldValue.increment(1));
     }
 
     private void checkNotificationPermission() {
@@ -168,6 +338,10 @@ public class MainActivity extends AppCompatActivity {
         btnSubmitConfirmation = findViewById(R.id.btnSubmitConfirmation);
         btnScanQR = findViewById(R.id.btnScanQR);
         btnSubmitRating = findViewById(R.id.btnSubmitRating);
+        btnWallet = findViewById(R.id.btnWallet);
+        btnMealHistory = findViewById(R.id.btnMealHistory);
+        btnProfile   = findViewById(R.id.btnProfile);
+        btnFeedback  = findViewById(R.id.btnFeedback);
         btnLogout = findViewById(R.id.btnLogout);
         progressBar = findViewById(R.id.progressBar);
     }
@@ -206,13 +380,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void submitMealConfirmation() {
-        // Enforce 10 PM Deadline (TEMPORARILY COMMENTED OUT FOR TESTING)
-        // Calendar now = Calendar.getInstance();
-        // if (now.get(Calendar.HOUR_OF_DAY) >= 22) {
-        // Toast.makeText(this, "Deadline Passed! You cannot change meals after 10 PM.",
-        // Toast.LENGTH_LONG).show();
-        // return;
-        // }
+        // ---- 10 PM Deadline Enforcement ----
+        Calendar now = Calendar.getInstance();
+        if (now.get(Calendar.HOUR_OF_DAY) >= 22) {
+            Toast.makeText(this,
+                    "⏰ Deadline Passed! Meal confirmations lock at 10:00 PM.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
 
         // 1. Get Selected Meal Type (Breakfast/Lunch/Dinner)
         int selectedChipId = cgMealType.getCheckedChipId();

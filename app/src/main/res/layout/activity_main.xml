@@ -250,6 +250,49 @@
             app:cornerRadius="8dp"
             app:icon="@android:drawable/ic_menu_camera"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Wallet Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnWallet"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="💳 My Wallet"
+            android:textSize="18sp"
+            app:cornerRadius="8dp"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Meal History Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMealHistory"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="📋 Meal History"
+            android:textSize="15sp"
+            app:cornerRadius="8dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Profile Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnProfile"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="👤 My Profile"
+            android:textSize="15sp"
+            app:cornerRadius="8dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Feedback Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFeedback"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="📣 Report a Problem"
+            android:textSize="15sp"
+            app:cornerRadius="8dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_marginBottom="16dp"/>
 
         <ProgressBar
