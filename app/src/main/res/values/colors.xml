@@ -22,4 +22,8 @@
     <color name="white">#FFFFFFFF</color>
     <color name="primary_premium">#432C7A</color> <!-- Deep Slate Purple -->
     <color name="splash_background">#121212</color>
+    
+    <!-- Smart Mess Brand Colors -->
+    <color name="brand_orange">#FF6600</color>
+    <color name="brand_green">#00A34F</color>
 </resources>
