@@ -1,277 +1,282 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    tools:context=".StaffActivity">
+    android:background="#F8FAFC">
 
-    <LinearLayout
+    <!-- TEAL HEADER -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/llHeader"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
-
+        android:layout_height="140dp"
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="#0F6E56">
+        
         <TextView
             android:id="@+id/tvGreeting"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Staff Dashboard"
-            android:textSize="28sp"
+            android:text="Good morning, Staff"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="@color/black"
-            android:layout_marginBottom="8dp"/>
-
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="48dp"
+            android:layout_marginStart="24dp"/>
+            
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Manage Mess Operations"
-            android:textSize="16sp"
-            android:textColor="@color/material_dynamic_neutral50"
-            android:layout_marginBottom="32dp"/>
+            android:text="Mess Staff"
+            android:textColor="#0F6E56"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:background="@drawable/bg_history_badge"
+            app:layout_constraintTop_toBottomOf="@id/tvGreeting"
+            app:layout_constraintStart_toStartOf="@id/tvGreeting"
+            android:layout_marginTop="8dp"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Phase 1: Attendance Generation -->
-        <com.google.android.material.card.MaterialCardView
+    <!-- Wave Clip -->
+    <ImageView
+        android:id="@+id/ivWave"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:src="@drawable/bg_wave_header_teal"
+        android:scaleType="fitXY"
+        app:layout_constraintTop_toBottomOf="@id/llHeader"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/llHeader"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="16dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/material_dynamic_neutral90"
-            android:layout_marginBottom="24dp">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <LinearLayout
+            <!-- LIVE COUNTER HERO CARD -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="QR Attendance"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="8dp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Select meal, then generate QR for students to scan at entry."
-                    android:textColor="@color/material_dynamic_neutral50"
-                    android:layout_marginBottom="12dp"/>
-
-                <!-- Meal selector for QR -->
-                <Spinner
-                    android:id="@+id/spinnerMealType"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:background="@android:drawable/btn_dropdown"
-                    android:layout_marginBottom="12dp"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnGenerateQR"
-                    android:layout_width="match_parent"
-                    android:layout_height="55dp"
-                    android:text="Generate Session QR"
-                    app:icon="@android:drawable/ic_menu_camera"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginBottom="16dp"/>
-
-                <ImageView
-                    android:id="@+id/ivQrCode"
-                    android:layout_width="250dp"
-                    android:layout_height="250dp"
-                    android:layout_gravity="center"
-                    android:visibility="gone"
-                    android:contentDescription="Generated QR Code"/>
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Live Capacity Counter Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="16dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/material_dynamic_neutral90"
-            android:layout_marginBottom="24dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🚦 Live Capacity Counter"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="4dp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Students scanned in vs. total capacity today"
-                    android:textSize="12sp"
-                    android:textColor="@color/material_dynamic_neutral50"
-                    android:layout_marginBottom="16dp"/>
-
-                <!-- Breakfast row -->
+                app:cardCornerRadius="16dp"
+                app:cardElevation="8dp"
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_marginTop="-24dp"
+                android:layout_marginBottom="24dp">
+                
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🌅 Breakfast"
-                        android:textSize="15sp"/>
-                    <TextView
-                        android:id="@+id/tvBreakfastCounter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Loading…"
-                        android:textStyle="bold"
-                        android:textSize="15sp"/>
+                    android:orientation="vertical"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="24dp"
+                    android:paddingHorizontal="20dp">
+                    
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <View android:id="@+id/vPulseDot" android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/bg_history_badge" android:backgroundTint="#00A34F" android:layout_marginEnd="8dp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Live entry counter" android:textColor="#0F172A" android:textSize="16sp" android:textStyle="bold"/>
+                    </LinearLayout>
+                    
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:baselineAligned="false" android:layout_marginTop="16dp">
+                        
+                        <!-- Breakfast -->
+                        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Breakfast" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCountBfast" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="36sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCapBfast" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="12sp"/>
+                            <ProgressBar android:id="@+id/pbBfast" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp" android:progress="0" android:progressTint="#00A34F" android:progressBackgroundTint="#F1F5F9"/>
+                        </LinearLayout>
+                        
+                        <!-- Lunch -->
+                        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginHorizontal="8dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lunch" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCountLunch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="36sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCapLunch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="12sp"/>
+                            <ProgressBar android:id="@+id/pbLunch" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp" android:progress="0" android:progressTint="#00A34F" android:progressBackgroundTint="#F1F5F9"/>
+                        </LinearLayout>
+                        
+                        <!-- Dinner -->
+                        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dinner" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCountDinner" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="36sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCapDinner" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="12sp"/>
+                            <ProgressBar android:id="@+id/pbDinner" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp" android:progress="0" android:progressTint="#00A34F" android:progressBackgroundTint="#F1F5F9"/>
+                        </LinearLayout>
+                    </LinearLayout>
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- Lunch row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="☀️ Lunch"
-                        android:textSize="15sp"/>
-                    <TextView
-                        android:id="@+id/tvLunchCounter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Loading…"
-                        android:textStyle="bold"
-                        android:textSize="15sp"/>
-                </LinearLayout>
-
-                <!-- Dinner row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🌙 Dinner"
-                        android:textSize="15sp"/>
-                    <TextView
-                        android:id="@+id/tvDinnerCounter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Loading…"
-                        android:textStyle="bold"
-                        android:textSize="15sp"/>
-                </LinearLayout>
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Phase 2: Waste Data Entry -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="16dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/material_dynamic_neutral90"
-            android:layout_marginBottom="24dp">
-
-            <LinearLayout
+            <!-- QR GENERATOR CARD -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Log Waste Data"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="16dp"/>
-
-                <com.google.android.material.textfield.TextInputLayout
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#E2E8F0"
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_marginBottom="24dp">
+                
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Prepared Plates (Count)"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="16dp">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etPreparedPlates"
+                    android:orientation="vertical"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="24dp">
+                    
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Generate entry QR" android:textColor="#0F172A" android:textSize="16sp" android:textStyle="bold" android:layout_marginStart="20dp" android:layout_marginBottom="16dp"/>
+                    
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/tabMeals"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="number"/>
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Wasted Food (in Kg)"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="24dp">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etWastedKg"
+                        android:background="@android:color/transparent"
+                        app:tabIndicatorColor="#0F6E56"
+                        app:tabSelectedTextColor="#0F172A"
+                        app:tabTextColor="#64748B"
+                        app:tabIndicatorHeight="3dp"/>
+                        
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGenerateQR"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginHorizontal="20dp"
+                        android:layout_marginTop="16dp"
+                        android:text="Generate QR Code"
+                        android:textColor="#FFFFFF"
+                        app:cornerRadius="12dp"
+                        android:backgroundTint="#0F6E56"/>
+                        
+                    <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="numberDecimal"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="24dp">
+                        
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cvQrWrapper"
+                            android:layout_width="240dp"
+                            android:layout_height="240dp"
+                            android:layout_centerHorizontal="true"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="4dp"
+                            app:cardBackgroundColor="#FFFFFF"
+                            android:visibility="gone"
+                            android:scaleX="0"
+                            android:scaleY="0">
+                            
+                            <ImageView
+                                android:id="@+id/ivQrCode"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:padding="16dp"/>
+                        </com.google.android.material.card.MaterialCardView>
+                        
+                        <TextView
+                            android:id="@+id/tvQrCaption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_below="@id/cvQrWrapper"
+                            android:layout_centerHorizontal="true"
+                            android:text="Breakfast • Today"
+                            android:textColor="#94A3B8"
+                            android:textSize="12sp"
+                            android:layout_marginTop="12dp"
+                            android:visibility="gone"/>
+                    </RelativeLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSubmitWaste"
+            <!-- WASTE LOGGING CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#E2E8F0"
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_marginBottom="32dp">
+                
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="60dp"
-                    android:text="Upload Waste Data"
-                    android:textSize="18sp"
-                    app:cornerRadius="8dp"/>
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="24dp"
+                    android:paddingHorizontal="20dp">
+                    
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Log Waste Data" android:textColor="#0F172A" android:textSize="16sp" android:textStyle="bold" android:layout_marginBottom="16dp"/>
+                    
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Plates prepared"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="#0F6E56"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPreparedPlates"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                    
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Waste (kg)"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="#0F6E56"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="16dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etWastedKg"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal"/>
+                    </com.google.android.material.textfield.TextInputLayout>
 
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSubmitWaste"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:text="Submit Waste Data"
+                        android:textColor="#0F6E56"
+                        app:cornerRadius="12dp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="#0F6E56"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone"/>
+            <!-- LOGOUT -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogout"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="Log Out"
+                android:textColor="#EF4444"
+                app:cornerRadius="12dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:strokeColor="#EF4444"
+                android:layout_marginBottom="48dp"/>
+                
+        </LinearLayout>
+    </ScrollView>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"/>
-
-        <!-- Logout Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLogout"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:text="Log Out"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            app:cornerRadius="8dp"
-            app:strokeColor="@color/colorPrimary"
-            android:textColor="@color/colorPrimary"/>
-
-    </LinearLayout>
-</ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

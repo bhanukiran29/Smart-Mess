@@ -7,6 +7,9 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.MotionEvent;
+import android.view.WindowManager;
+import android.view.animation.OvershootInterpolator;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -35,6 +38,10 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
+        // Edge to Edge Full Screen
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+
         // Check if user is already logged in
         if (mAuth.getCurrentUser() != null) {
             checkUserRoleAndRedirect(mAuth.getCurrentUser().getUid());
@@ -48,6 +55,19 @@ public class LoginActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
 
         btnLogin.setOnClickListener(v -> loginUser());
+
+        btnLogin.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    v.animate().scaleX(0.97f).scaleY(0.97f).setDuration(100).start();
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(100).setInterpolator(new OvershootInterpolator()).start();
+                    break;
+            }
+            return false;
+        });
 
         tvRegister.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
@@ -76,7 +96,14 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         String userId = mAuth.getCurrentUser().getUid();
-                        checkUserRoleAndRedirect(userId);
+                        // Success animation morph to green checkmark
+                        btnLogin.setText("✓");
+                        btnLogin.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#00A34F")));
+                        btnLogin.setEnabled(false);
+                        
+                        new android.os.Handler().postDelayed(() -> {
+                            checkUserRoleAndRedirect(userId);
+                        }, 500);
                     } else {
                         progressBar.setVisibility(View.GONE);
                         btnLogin.setEnabled(true);

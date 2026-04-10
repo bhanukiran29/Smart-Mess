@@ -1,11 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+
+    <!-- ══════════════════════════════════════════════
+         Base app theme — Material3 DayNight, no action bar
+         ══════════════════════════════════════════════ -->
     <style name="Base.Theme.SmartMess" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <item name="colorPrimary">@color/primary_premium</item>
-        <item name="colorPrimaryVariant">@color/primary_premium</item>
+        <item name="colorPrimary">@color/admin_purple</item>
+        <item name="colorPrimaryVariant">@color/admin_purple</item>
         <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="android:colorBackground">@color/colorBackground</item>
+
+        <!-- Default activity transition: slide in from right -->
+        <item name="android:windowAnimationStyle">@style/AppWindowAnimation</item>
     </style>
 
     <style name="Theme.SmartMess" parent="Base.Theme.SmartMess" />
+
+    <!-- ══════════════════════════════════════════════
+         Window transition animations (applied globally)
+         ══════════════════════════════════════════════ -->
+    <style name="AppWindowAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/slide_in_right</item>
+        <item name="android:activityOpenExitAnimation">@anim/slide_out_left</item>
+        <item name="android:activityCloseEnterAnimation">@anim/slide_in_right</item>
+        <item name="android:activityCloseExitAnimation">@anim/slide_out_left</item>
+    </style>
+
+    <!-- ══════════════════════════════════════════════
+         Splash — truly fullscreen, no status bar tint
+         ══════════════════════════════════════════════ -->
+    <style name="Theme.SmartMess.Splash" parent="Theme.SmartMess">
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+        <item name="android:navigationBarColor">@color/splash_background</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+
+    <!-- ══════════════════════════════════════════════
+         AlertDialog — deep purple for Admin screens
+         ══════════════════════════════════════════════ -->
+    <style name="AlertDialog_Purple" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorPrimary">@color/admin_purple</item>
+        <item name="colorAccent">@color/admin_purple</item>
+        <item name="buttonBarPositiveButtonStyle">@style/AlertBtn_Purple</item>
+    </style>
+
+    <style name="AlertBtn_Purple" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/admin_purple</item>
+    </style>
+
+    <!-- ══════════════════════════════════════════════
+         TextInputLayout — outlined, rounded 14dp corners
+         Used across Login, Register, Staff, Menu screens
+         ══════════════════════════════════════════════ -->
+    <style name="InputField.Outlined" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">14dp</item>
+        <item name="boxCornerRadiusTopEnd">14dp</item>
+        <item name="boxCornerRadiusBottomStart">14dp</item>
+        <item name="boxCornerRadiusBottomEnd">14dp</item>
+        <item name="boxStrokeColor">@color/input_stroke_selector</item>
+        <item name="hintTextColor">@color/text_hint</item>
+    </style>
+
+    <!-- ══════════════════════════════════════════════
+         Primary CTA button — navy fill, 16dp corners
+         ══════════════════════════════════════════════ -->
+    <style name="Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/white</item>
+        <item name="backgroundTint">@color/colorPrimary</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:stateListAnimator">@animator/button_state_list</item>
+    </style>
+
+    <!-- ══════════════════════════════════════════════
+         Outlined button — navy stroke, transparent bg
+         ══════════════════════════════════════════════ -->
+    <style name="Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="strokeColor">@color/colorPrimary</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:stateListAnimator">@animator/button_state_list</item>
+    </style>
+
+    <!-- ══════════════════════════════════════════════
+         Admin purple CTA
+         ══════════════════════════════════════════════ -->
+    <style name="Button.Admin" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/white</item>
+        <item name="backgroundTint">@color/admin_purple</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:stateListAnimator">@animator/button_state_list</item>
+    </style>
+
+    <!-- ══════════════════════════════════════════════
+         Staff teal CTA
+         ══════════════════════════════════════════════ -->
+    <style name="Button.Staff" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/white</item>
+        <item name="backgroundTint">@color/staff_teal</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:stateListAnimator">@animator/button_state_list</item>
+    </style>
+
 </resources>

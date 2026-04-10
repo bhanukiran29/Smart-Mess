@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Deep Blue Primary Theme -->
+    <!-- ── Primary brand ── -->
     <color name="colorPrimary">#1E3A8A</color>
     <color name="colorPrimaryVariant">#1E40AF</color>
     <color name="colorOnPrimary">#FFFFFF</color>
@@ -12,18 +12,57 @@
     <color name="colorError">#EF4444</color>
     <color name="colorOnError">#FFFFFF</color>
 
-    <color name="colorBackground">#F8FAFC</color> <!-- Light grayish blue background -->
-    <color name="colorOnBackground">#0F172A</color> <!-- Dark text -->
-    <color name="colorSurface">#FFFFFF</color> <!-- Card backgrounds -->
+    <!-- ── Surfaces ── -->
+    <color name="colorBackground">#F8FAFC</color>
+    <color name="colorOnBackground">#0F172A</color>
+    <color name="colorSurface">#FFFFFF</color>
     <color name="colorOnSurface">#1E293B</color>
 
-    <!-- Original Base Colors for Fallback -->
+    <!-- ── Neutrals ── -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="primary_premium">#432C7A</color> <!-- Deep Slate Purple -->
-    <color name="splash_background">#121212</color>
-    
-    <!-- Smart Mess Brand Colors -->
+
+    <!-- ── Admin identity ── -->
+    <color name="admin_purple">#432C7A</color>
+    <color name="admin_purple_light">#EDE9FE</color>
+    <color name="admin_purple_mid">#7C3AED</color>
+
+    <!-- ── Staff identity ── -->
+    <color name="staff_teal">#0F6E56</color>
+    <color name="staff_teal_light">#CCFBF1</color>
+
+    <!-- ── Splash ── -->
+    <color name="splash_background">#0F172A</color>
+
+    <!-- ── Brand accents ── -->
     <color name="brand_orange">#FF6600</color>
     <color name="brand_green">#00A34F</color>
+
+    <!-- ── Semantic ── -->
+    <color name="success_green">#16A34A</color>
+    <color name="success_green_bg">#DCFCE7</color>
+    <color name="warning_amber">#D97706</color>
+    <color name="warning_amber_bg">#FEF3C7</color>
+    <color name="error_red">#DC2626</color>
+    <color name="error_red_bg">#FEE2E2</color>
+
+    <!-- ── Text scale ── -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_hint">#94A3B8</color>
+
+    <!-- ── Border ── -->
+    <color name="border_default">#E2E8F0</color>
+    <color name="border_focus">#1E3A8A</color>
+
+    <!-- ── Badge text colors ── -->
+    <color name="badge_student_text">#1E40AF</color>
+    <color name="badge_staff_text">#0F6E56</color>
+    <color name="badge_admin_text">#432C7A</color>
+
+    <!-- ── Chip selector states (used in chip_role_selector.xml) ── -->
+    <color name="chip_unchecked_bg">#F1F5F9</color>
+    <color name="chip_checked_bg">#432C7A</color>
+    <color name="chip_unchecked_text">#64748B</color>
+    <color name="chip_checked_text">#FFFFFF</color>
 </resources>

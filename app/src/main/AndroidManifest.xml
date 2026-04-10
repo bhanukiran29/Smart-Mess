@@ -57,6 +57,9 @@
             android:name=".FeedbackActivity"
             android:exported="false" />
         <activity
+            android:name=".CustomScannerActivity"
+            android:exported="false" />
+        <activity
             android:name=".UserManagementActivity"
             android:exported="false" />
         <activity

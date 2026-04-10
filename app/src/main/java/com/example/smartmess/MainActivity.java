@@ -8,12 +8,13 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.RadioGroup;
 import android.widget.RatingBar;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.animation.ValueAnimator;
+import android.view.animation.DecelerateInterpolator;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -27,6 +28,8 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.SetOptions;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -44,15 +47,16 @@ import com.google.firebase.firestore.FieldValue;
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvGreeting, tvDate;
-    private TextView tvMenuBreakfast, tvMenuLunch, tvMenuDinner;
-    private ChipGroup cgMealType;
-    private RadioGroup rgStatus;
-    private Spinner spinnerTimeSlot, spinnerRatingMeal;
+    private View rowBreakfast, rowLunch, rowDinner;
+    private TextView tvWalletBalance;
+    private ChipGroup cgMealType, cgStatus, cgTimeSlot, cgRatingMeal;
     private RatingBar ratingBarMeal;
-    private MaterialButton btnSubmitConfirmation, btnScanQR, btnSubmitRating, btnWallet,
-            btnMealHistory, btnProfile, btnFeedback;
+    private MaterialButton btnSubmitConfirmation, btnScanQR;
+    private TextView btnSubmitRating;
+    private LinearLayout btnNavHome, btnNavHistory, btnNavWallet, btnNavProfile;
     private Button btnLogout;
     private ProgressBar progressBar;
+    private View cardTodaysMenu, cardConfirmTomorrow, cardRateMeal;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -83,11 +87,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         initializeViews();
-        setupSpinner();
         loadGreetingAndDate();
         loadTodaysMenu();
+        loadWalletBalance();
         checkNotificationPermission();
         scheduleMealReminder();
+        runEntryAnimations();
 
         btnLogout.setOnClickListener(v -> {
             mAuth.signOut();
@@ -98,25 +103,27 @@ public class MainActivity extends AppCompatActivity {
         btnSubmitConfirmation.setOnClickListener(v -> submitMealConfirmation());
         btnSubmitRating.setOnClickListener(v -> submitMealRating());
 
-        // Open Wallet screen
-        btnWallet.setOnClickListener(v ->
-                startActivity(new Intent(MainActivity.this, WalletActivity.class)));
+        // Bottom Navigation
+        btnNavWallet.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, WalletActivity.class)));
+        btnNavHistory.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, MealHistoryActivity.class)));
+        btnNavProfile.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, ProfileActivity.class)));
+        
+        // For Feedback, we can bind it to the top avatar if User clicks it (optional):
+        findViewById(R.id.cvAvatar).setOnClickListener(v -> startActivity(new Intent(MainActivity.this, FeedbackActivity.class)));
 
-        // Meal History
-        btnMealHistory.setOnClickListener(v ->
-                startActivity(new Intent(MainActivity.this, MealHistoryActivity.class)));
-
-        // Profile
-        btnProfile.setOnClickListener(v ->
-                startActivity(new Intent(MainActivity.this, ProfileActivity.class)));
-
-        // Feedback
-        btnFeedback.setOnClickListener(v ->
-                startActivity(new Intent(MainActivity.this, FeedbackActivity.class)));
+        // Top up pill routing logic
+        View btnTopUpPill = findViewById(R.id.btnTopUpPill);
+        if (btnTopUpPill != null) {
+            btnTopUpPill.setOnClickListener(v -> {
+                AnimationUtils.buttonPressDown(v);
+                startActivity(new Intent(MainActivity.this, WalletActivity.class));
+            });
+        }
 
         // Launch Scanner
         btnScanQR.setOnClickListener(v -> {
             ScanOptions options = new ScanOptions();
+            options.setCaptureActivity(CustomScannerActivity.class);
             options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
             options.setPrompt("Scan the Session QR Code at the entrance");
             options.setCameraId(0);
@@ -153,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
 
         // ---- QR Time-Window Lock ----
         if (!isMealTimeValid(mealType)) {
+            AnimationUtils.errorShake(btnScanQR);
             Toast.makeText(this,
                     "🕐 " + capitalize(mealType) + " entry is not open right now.\n"
                     + mealTimeWindow(mealType),
@@ -169,6 +177,7 @@ public class MainActivity extends AppCompatActivity {
 
                     if (capacity != null && capacity > 0 && scannedIn >= capacity) {
                         // 🚫 Food is full — reject immediately
+                        AnimationUtils.errorShake(btnScanQR);
                         Toast.makeText(this,
                                 "🚫 Sorry! " + mealType.toUpperCase() + " is full. " +
                                 "(" + scannedIn + "/" + capacity + " plates served). " +
@@ -255,6 +264,7 @@ public class MainActivity extends AppCompatActivity {
                                 });
                     } else {
                         // Insufficient balance – deny entry
+                        AnimationUtils.errorShake(btnScanQR);
                         Toast.makeText(this,
                                 "❌ Insufficient wallet balance (₹" + String.format("%.0f", balance)
                                         + "). Please top up in My Wallet.",
@@ -282,8 +292,13 @@ public class MainActivity extends AppCompatActivity {
                 .set(log);
 
         // Atomically increment the capacity counter so the live counter updates in real-time
+        // We use SetOptions.merge() so it works even if Admin didn't manually set capacity for today.
+        Map<String, Object> incrementData = new HashMap<>();
+        incrementData.put(mealType + "_scanned", FieldValue.increment(1));
+        incrementData.put("lastUpdated", System.currentTimeMillis());
+
         db.collection("meal_capacity").document(mealDate)
-                .update(mealType + "_scanned", FieldValue.increment(1));
+                .set(incrementData, SetOptions.merge());
     }
 
     private void checkNotificationPermission() {
@@ -320,42 +335,77 @@ public class MainActivity extends AppCompatActivity {
                 dailyWorkRequest);
     }
 
+    private void runEntryAnimations() {
+        View[] viewsToAnimate = {cardTodaysMenu, cardConfirmTomorrow, btnScanQR, cardRateMeal};
+        AnimationUtils.staggerViews(viewsToAnimate, 80);
+    }
+
+    private void loadWalletBalance() {
+        String userId = mAuth.getCurrentUser().getUid();
+        db.collection("wallets").document(userId).addSnapshotListener((snapshot, error) -> {
+            if (snapshot != null && snapshot.exists()) {
+                Double bal = snapshot.getDouble("balance");
+                int targetBal = (bal != null) ? bal.intValue() : 0;
+                
+                // Animate balance counting up utilizing AnimationUtils logically
+                AnimationUtils.countUpTo(tvWalletBalance, 0, targetBal, 800);
+            }
+        });
+    }
+
     private void initializeViews() {
         tvGreeting = findViewById(R.id.tvGreeting);
         tvDate = findViewById(R.id.tvDate);
+        tvWalletBalance = findViewById(R.id.tvWalletBalance);
         
-        tvMenuBreakfast = findViewById(R.id.tvMenuBreakfast);
-        tvMenuLunch = findViewById(R.id.tvMenuLunch);
-        tvMenuDinner = findViewById(R.id.tvMenuDinner);
+        rowBreakfast = findViewById(R.id.rowBreakfast);
+        rowLunch = findViewById(R.id.rowLunch);
+        rowDinner = findViewById(R.id.rowDinner);
+        
+        cardTodaysMenu = findViewById(R.id.cardTodaysMenu);
+        cardConfirmTomorrow = findViewById(R.id.cardConfirmTomorrow);
+        cardRateMeal = findViewById(R.id.cardRateMeal);
         
         cgMealType = findViewById(R.id.cgMealType);
-        rgStatus = findViewById(R.id.rgStatus);
+        cgStatus = findViewById(R.id.cgStatus);
         
-        spinnerTimeSlot = findViewById(R.id.spinnerTimeSlot);
-        spinnerRatingMeal = findViewById(R.id.spinnerRatingMeal);
+        cgTimeSlot = findViewById(R.id.cgTimeSlot);
+        cgRatingMeal = findViewById(R.id.cgRatingMeal);
         ratingBarMeal = findViewById(R.id.ratingBarMeal);
         
         btnSubmitConfirmation = findViewById(R.id.btnSubmitConfirmation);
         btnScanQR = findViewById(R.id.btnScanQR);
         btnSubmitRating = findViewById(R.id.btnSubmitRating);
-        btnWallet = findViewById(R.id.btnWallet);
-        btnMealHistory = findViewById(R.id.btnMealHistory);
-        btnProfile   = findViewById(R.id.btnProfile);
-        btnFeedback  = findViewById(R.id.btnFeedback);
+        
+        btnNavHome = findViewById(R.id.btnNavHome);
+        btnNavHistory = findViewById(R.id.btnNavHistory);
+        btnNavWallet = findViewById(R.id.btnNavWallet);
+        btnNavProfile = findViewById(R.id.btnNavProfile);
+        
         btnLogout = findViewById(R.id.btnLogout);
         progressBar = findViewById(R.id.progressBar);
+        
+        if(rowBreakfast != null) {
+            ((TextView) rowBreakfast.findViewById(R.id.tvMealName)).setText("Breakfast: Loading...");
+            ((TextView) rowBreakfast.findViewById(R.id.tvMealTime)).setText("7 AM - 10 AM");
+            ((com.google.android.material.card.MaterialCardView) rowBreakfast.findViewById(R.id.cvMealIcon)).setCardBackgroundColor(android.graphics.Color.parseColor("#F59E0B"));
+            ((TextView) rowBreakfast.findViewById(R.id.tvMealEmoji)).setText("☀️");
+        }
+        if(rowLunch != null) {
+            ((TextView) rowLunch.findViewById(R.id.tvMealName)).setText("Lunch: Loading...");
+            ((TextView) rowLunch.findViewById(R.id.tvMealTime)).setText("12 PM - 3 PM");
+            ((com.google.android.material.card.MaterialCardView) rowLunch.findViewById(R.id.cvMealIcon)).setCardBackgroundColor(android.graphics.Color.parseColor("#10B981"));
+            ((TextView) rowLunch.findViewById(R.id.tvMealEmoji)).setText("🌤️");
+        }
+        if(rowDinner != null) {
+            ((TextView) rowDinner.findViewById(R.id.tvMealName)).setText("Dinner: Loading...");
+            ((TextView) rowDinner.findViewById(R.id.tvMealTime)).setText("7 PM - 10 PM");
+            ((com.google.android.material.card.MaterialCardView) rowDinner.findViewById(R.id.cvMealIcon)).setCardBackgroundColor(android.graphics.Color.parseColor("#8B5CF6"));
+            ((TextView) rowDinner.findViewById(R.id.tvMealEmoji)).setText("🌙");
+        }
     }
 
-    private void setupSpinner() {
-        String[] slots = new String[] { "Select Time", "7:00 AM - 8:00 AM", "8:00 AM - 9:00 AM", "12:00 PM - 1:00 PM",
-                "1:00 PM - 2:00 PM", "7:00 PM - 8:00 PM", "8:00 PM - 9:00 PM" };
-        ArrayAdapter<String> timeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, slots);
-        spinnerTimeSlot.setAdapter(timeAdapter);
 
-        String[] ratingMeals = new String[] { "Breakfast", "Lunch", "Dinner" };
-        ArrayAdapter<String> mealAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, ratingMeals);
-        spinnerRatingMeal.setAdapter(mealAdapter);
-    }
 
     private void loadGreetingAndDate() {
         String userId = mAuth.getCurrentUser().getUid();
@@ -399,15 +449,20 @@ public class MainActivity extends AppCompatActivity {
         String mealType = selectedChip.getText().toString().toLowerCase();
 
         // 2. Get Eat Status
-        int selectedStatusId = rgStatus.getCheckedRadioButtonId();
-        String status = (selectedStatusId == R.id.rbEat) ? "eat" : "not_eat";
+        int selectedStatusId = cgStatus.getCheckedChipId();
+        if (selectedStatusId == View.NO_ID) {
+            Toast.makeText(this, "Please select if you will eat or skip.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String status = (selectedStatusId == R.id.chipEat) ? "eat" : "not_eat";
 
         // 3. Get Time Slot
-        String timeSlot = spinnerTimeSlot.getSelectedItem().toString();
-        if (status.equals("eat") && timeSlot.equals("Select Time")) {
+        int timeSlotId = cgTimeSlot.getCheckedChipId();
+        if (status.equals("eat") && timeSlotId == View.NO_ID) {
             Toast.makeText(this, "Please select an eating time slot.", Toast.LENGTH_SHORT).show();
             return;
         }
+        String timeSlot = status.equals("eat") ? ((Chip) findViewById(timeSlotId)).getText().toString() : "Skipped";
 
         progressBar.setVisibility(View.VISIBLE);
         btnSubmitConfirmation.setEnabled(false);
@@ -438,19 +493,30 @@ public class MainActivity extends AppCompatActivity {
                         String l = documentSnapshot.getString("lunch");
                         String d = documentSnapshot.getString("dinner");
                         
-                        tvMenuBreakfast.setText("Breakfast: " + (b != null && !b.isEmpty() ? b : "Not Set"));
-                        tvMenuLunch.setText("Lunch: " + (l != null && !l.isEmpty() ? l : "Not Set"));
-                        tvMenuDinner.setText("Dinner: " + (d != null && !d.isEmpty() ? d : "Not Set"));
+                        if (rowBreakfast != null) {
+                            ((TextView) rowBreakfast.findViewById(R.id.tvMealName)).setText(b != null && !b.isEmpty() ? b : "Not Set");
+                        }
+                        if (rowLunch != null) {
+                            ((TextView) rowLunch.findViewById(R.id.tvMealName)).setText(l != null && !l.isEmpty() ? l : "Not Set");
+                        }
+                        if (rowDinner != null) {
+                            ((TextView) rowDinner.findViewById(R.id.tvMealName)).setText(d != null && !d.isEmpty() ? d : "Not Set");
+                        }
                     } else {
-                        tvMenuBreakfast.setText("Breakfast: Not uploaded yet");
-                        tvMenuLunch.setText("Lunch: Not uploaded yet");
-                        tvMenuDinner.setText("Dinner: Not uploaded yet");
+                        if (rowBreakfast != null) ((TextView) rowBreakfast.findViewById(R.id.tvMealName)).setText("Not uploaded yet");
+                        if (rowLunch != null) ((TextView) rowLunch.findViewById(R.id.tvMealName)).setText("Not uploaded yet");
+                        if (rowDinner != null) ((TextView) rowDinner.findViewById(R.id.tvMealName)).setText("Not uploaded yet");
                     }
                 });
     }
 
     private void submitMealRating() {
-        String mealType = spinnerRatingMeal.getSelectedItem().toString().toLowerCase();
+        int mealId = cgRatingMeal.getCheckedChipId();
+        if (mealId == View.NO_ID) {
+            Toast.makeText(this, "Select a meal to rate.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String mealType = ((Chip) findViewById(mealId)).getText().toString().toLowerCase();
         float rating = ratingBarMeal.getRating();
         String userId = mAuth.getCurrentUser().getUid();
         

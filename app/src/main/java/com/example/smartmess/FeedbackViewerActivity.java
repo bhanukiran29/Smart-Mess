@@ -1,49 +1,113 @@
 package com.example.smartmess;
 
+import android.graphics.Color;
 import android.os.Bundle;
+import android.text.format.DateUtils;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
+import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LayoutAnimationController;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * FeedbackViewerActivity — Admin screen to review all student complaints.
- * Reads from: feedback (collection)
- * Each doc: { userId, category, feedback, date, status, timestamp }
- */
 public class FeedbackViewerActivity extends AppCompatActivity {
 
-    private LinearLayout llFeedbackList;
-    private TextView tvFeedbackCount;
+    private ImageView ivBack;
+    private ChipGroup cgFilters;
+    private RecyclerView rvFeedback;
     private ProgressBar progressBar;
-    private Button btnBack;
+
     private FirebaseFirestore db;
+    private FeedbackAdapter adapter;
+    private List<FeedbackItem> masterList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feedback_viewer);
 
-        db              = FirebaseFirestore.getInstance();
-        llFeedbackList  = findViewById(R.id.llFeedbackList);
-        tvFeedbackCount = findViewById(R.id.tvFeedbackCount);
-        progressBar     = findViewById(R.id.progressBarFeedbackViewer);
-        btnBack         = findViewById(R.id.btnFeedbackViewerBack);
+        db = FirebaseFirestore.getInstance();
 
-        btnBack.setOnClickListener(v -> finish());
+        initializeViews();
+        setupFilters();
         loadFeedback();
+
+        ivBack.setOnClickListener(v -> finish());
+    }
+
+    private void initializeViews() {
+        ivBack = findViewById(R.id.ivBack);
+        cgFilters = findViewById(R.id.cgFilters);
+        rvFeedback = findViewById(R.id.rvFeedback);
+        progressBar = findViewById(R.id.progressBar);
+
+        rvFeedback.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new FeedbackAdapter();
+        rvFeedback.setAdapter(adapter);
+
+        // Native staggered list animation mechanics
+        LayoutAnimationController animation = new LayoutAnimationController(
+                new AlphaAnimation(0f, 1f), 0.15f
+        );
+        animation.setInterpolator(new DecelerateInterpolator());
+        rvFeedback.setLayoutAnimation(animation);
+    }
+
+    private void setupFilters() {
+        int[] chipIds = {R.id.fAll, R.id.fQual, R.id.fPort, R.id.fHyg, R.id.fBill, R.id.fOther};
+        
+        for (int id : chipIds) {
+            Chip chip = findViewById(id);
+            chip.setChipBackgroundColorResource(android.R.color.transparent);
+            
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    chip.setChipBackgroundColorResource(android.R.color.transparent);
+                    chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#432C7A"))); // Purple
+                    chip.setTextColor(Color.WHITE);
+                    
+                    applyFilter(chip.getText().toString());
+                } else {
+                    chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#F1F5F9")));
+                    chip.setTextColor(Color.parseColor("#64748B"));
+                }
+            });
+        }
+        
+        ((Chip) findViewById(R.id.fAll)).setChecked(true);
+    }
+
+    private void applyFilter(String filterValue) {
+        if (masterList.isEmpty()) return;
+        
+        rvFeedback.animate().alpha(0f).setDuration(150).withEndAction(() -> {
+            List<FeedbackItem> filtered = new ArrayList<>();
+            if (filterValue.equals("All")) {
+                filtered.addAll(masterList);
+            } else {
+                for (FeedbackItem item : masterList) {
+                    if (filterValue.equals(item.category)) filtered.add(item);
+                }
+            }
+            adapter.setData(filtered);
+            rvFeedback.animate().alpha(1f).setDuration(150).start();
+        }).start();
     }
 
     private void loadFeedback() {
@@ -53,96 +117,102 @@ public class FeedbackViewerActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(snapshots -> {
                     progressBar.setVisibility(View.GONE);
-                    tvFeedbackCount.setText("Total complaints: " + snapshots.size());
-
-                    llFeedbackList.removeAllViews();
-
-                    if (snapshots.isEmpty()) {
-                        TextView empty = new TextView(this);
-                        empty.setText("No feedback submitted yet. 🎉");
-                        empty.setTextSize(15);
-                        empty.setPadding(16, 32, 16, 32);
-                        llFeedbackList.addView(empty);
-                        return;
-                    }
-
-                    SimpleDateFormat fmt = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-
+                    masterList.clear();
                     for (QueryDocumentSnapshot doc : snapshots) {
-                        String category = doc.getString("category");
-                        String text     = doc.getString("feedback");
-                        String uid      = doc.getString("userId");
-                        String status   = doc.getString("status");
-                        Long   ts       = doc.getLong("timestamp");
-                        String dateStr  = ts != null ? fmt.format(new Date(ts)) : "Unknown date";
-
-                        // Card-like container
-                        LinearLayout card = new LinearLayout(this);
-                        card.setOrientation(LinearLayout.VERTICAL);
-                        card.setBackgroundResource(android.R.drawable.dialog_holo_light_frame);
-                        LinearLayout.LayoutParams cardParams =
-                                new LinearLayout.LayoutParams(
-                                        LinearLayout.LayoutParams.MATCH_PARENT,
-                                        LinearLayout.LayoutParams.WRAP_CONTENT);
-                        cardParams.setMargins(0, 0, 0, 24);
-                        card.setLayoutParams(cardParams);
-                        card.setPadding(32, 24, 32, 24);
-
-                        // Category + date row
-                        TextView tvCat = new TextView(this);
-                        tvCat.setText(categoryIcon(category) + " " + category + "  ·  " + dateStr);
-                        tvCat.setTextSize(12);
-                        tvCat.setTextColor(android.graphics.Color.parseColor("#6750A4"));
-
-                        // Feedback body
-                        TextView tvText = new TextView(this);
-                        tvText.setText(text);
-                        tvText.setTextSize(15);
-                        tvText.setTextColor(android.graphics.Color.parseColor("#1A1A2E"));
-                        tvText.setPadding(0, 8, 0, 8);
-
-                        // Student ID (truncated for privacy)
-                        String shortUid = uid != null && uid.length() > 8
-                                ? uid.substring(0, 8) + "…" : uid;
-                        TextView tvUser = new TextView(this);
-                        tvUser.setText("Student: " + shortUid + "  |  Status: " + (status != null ? status : "open"));
-                        tvUser.setTextSize(11);
-                        tvUser.setTextColor(android.graphics.Color.parseColor("#888888"));
-
-                        // Mark Resolved button
-                        Button btnResolve = new Button(this);
-                        btnResolve.setText("Mark Resolved ✓");
-                        btnResolve.setOnClickListener(v -> {
-                            doc.getReference().update("status", "resolved")
-                                    .addOnSuccessListener(a -> {
-                                        tvUser.setText("Status: resolved");
-                                        btnResolve.setEnabled(false);
-                                        Toast.makeText(this, "Marked as resolved", Toast.LENGTH_SHORT).show();
-                                    });
-                        });
-                        if ("resolved".equals(status)) btnResolve.setEnabled(false);
-
-                        card.addView(tvCat);
-                        card.addView(tvText);
-                        card.addView(tvUser);
-                        card.addView(btnResolve);
-                        llFeedbackList.addView(card);
+                        FeedbackItem item = new FeedbackItem();
+                        item.id = doc.getId();
+                        item.category = doc.getString("category") != null ? doc.getString("category") : "Other";
+                        item.text = doc.getString("feedback");
+                        item.rating = doc.getLong("rating") != null ? doc.getLong("rating").intValue() : 0;
+                        item.ts = doc.getLong("timestamp");
+                        masterList.add(item);
                     }
-                })
-                .addOnFailureListener(e -> {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "Failed to load feedback", Toast.LENGTH_SHORT).show();
+                    adapter.setData(masterList);
+                    rvFeedback.scheduleLayoutAnimation();
                 });
     }
 
-    private String categoryIcon(String category) {
-        if (category == null) return "📌";
-        switch (category) {
-            case "Food Quality":      return "🍽";
-            case "Hygiene":           return "🧹";
-            case "Quantity / Portion":return "⚖";
-            case "Staff Behaviour":   return "🤝";
-            default:                  return "📌";
+    private static class FeedbackItem {
+        String id, category, text;
+        int rating;
+        Long ts;
+    }
+
+    private class FeedbackAdapter extends RecyclerView.Adapter<FeedbackAdapter.ViewHolder> {
+        private List<FeedbackItem> items = new ArrayList<>();
+
+        public void setData(List<FeedbackItem> newItems) {
+            this.items = newItems;
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_feedback, parent, false);
+            return new ViewHolder(v);
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            FeedbackItem item = items.get(position);
+            
+            holder.tvFeedbackText.setText(item.text != null ? item.text : "");
+            holder.tvCategoryBadge.setText(item.category);
+            
+            // Map Star Rating string math automatically
+            StringBuilder stars = new StringBuilder();
+            for (int i = 0; i < 5; i++) {
+                stars.append(i < item.rating ? "★" : "☆");
+            }
+            holder.tvStars.setText(stars.toString());
+
+            if (item.ts != null) {
+                CharSequence timeAgo = DateUtils.getRelativeTimeSpanString(item.ts, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS);
+                holder.tvTimeAgo.setText(timeAgo);
+            } else {
+                holder.tvTimeAgo.setText("");
+            }
+
+            // Assign structural Category Colors mapped dynamically
+            int colorCode = Color.parseColor("#432C7A"); // Default purple for Other
+            switch (item.category) {
+                case "Food Quality": colorCode = Color.parseColor("#EF4444"); break; // Red
+                case "Portion Size": colorCode = Color.parseColor("#F59E0B"); break; // Amber
+                case "Hygiene":      colorCode = Color.parseColor("#06B6D4"); break; // Cyan
+                case "Billing":      colorCode = Color.parseColor("#10B981"); break; // Emerald
+            }
+            
+            holder.vLeftBorder.setBackgroundColor(colorCode);
+            holder.tvCategoryBadge.setBackgroundTintList(android.content.res.ColorStateList.valueOf(colorCode));
+            
+            // Expand string mechanic logic
+            holder.tvReadMore.setVisibility(item.text != null && item.text.length() > 120 ? View.VISIBLE : View.GONE);
+            holder.tvReadMore.setOnClickListener(v -> {
+                if (holder.tvFeedbackText.getMaxLines() == 3) {
+                    holder.tvFeedbackText.setMaxLines(50);
+                    holder.tvReadMore.setText("Show less");
+                } else {
+                    holder.tvFeedbackText.setMaxLines(3);
+                    holder.tvReadMore.setText("Read more");
+                }
+            });
+        }
+
+        @Override public int getItemCount() { return items.size(); }
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+            TextView tvStudentName, tvTimeAgo, tvCategoryBadge, tvFeedbackText, tvReadMore, tvStars;
+            View vLeftBorder;
+            ViewHolder(View v) {
+                super(v);
+                tvStudentName = v.findViewById(R.id.tvStudentName);
+                tvTimeAgo = v.findViewById(R.id.tvTimeAgo);
+                tvCategoryBadge = v.findViewById(R.id.tvCategoryBadge);
+                tvFeedbackText = v.findViewById(R.id.tvFeedbackText);
+                tvReadMore = v.findViewById(R.id.tvReadMore);
+                tvStars = v.findViewById(R.id.tvStars);
+                vLeftBorder = v.findViewById(R.id.vLeftBorder);
+            }
         }
     }
 }
