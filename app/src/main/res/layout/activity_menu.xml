@@ -113,10 +113,12 @@
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
                             <View android:layout_width="16dp" android:layout_height="16dp" android:background="@drawable/bg_history_badge" android:backgroundTint="#F59E0B"/>
                             <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Breakfast" android:textColor="#0F172A" android:textSize="14sp" android:textStyle="bold" android:layout_marginStart="8dp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Edit" android:textColor="#432C7A" android:textSize="12sp" android:textStyle="bold"/>
                         </LinearLayout>
-                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="e.g. Idli, Sambar, Chutney">
-                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etBreakfast" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="3"/>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="Slot 1 (e.g. Idli)" android:layout_marginBottom="8dp">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etBreakfast1" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="2"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="Slot 2 (e.g. Dosa)">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etBreakfast2" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="2"/>
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F1F5F9" android:layout_marginHorizontal="16dp"/>
@@ -126,23 +128,39 @@
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
                             <View android:layout_width="16dp" android:layout_height="16dp" android:background="@drawable/bg_history_badge" android:backgroundTint="#3B82F6"/>
                             <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Lunch" android:textColor="#0F172A" android:textSize="14sp" android:textStyle="bold" android:layout_marginStart="8dp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Edit" android:textColor="#432C7A" android:textSize="12sp" android:textStyle="bold"/>
                         </LinearLayout>
-                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="e.g. Rice, Dal, Paneer Butter Masala">
-                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLunch" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="3"/>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="Slot 1 (e.g. South Indian Meals)" android:layout_marginBottom="8dp">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLunch1" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="2"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="Slot 2 (e.g. North Indian Thali)">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLunch2" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="2"/>
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F1F5F9" android:layout_marginHorizontal="16dp"/>
 
+                    <!-- Snacks Section -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                            <View android:layout_width="16dp" android:layout_height="16dp" android:background="@drawable/bg_history_badge" android:backgroundTint="#8B5CF6"/>
+                            <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Snacks" android:textColor="#0F172A" android:textSize="14sp" android:textStyle="bold" android:layout_marginStart="8dp"/>
+                        </LinearLayout>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="Slot 1 (e.g. Samosa, Tea)">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etSnacks" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="2"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F1F5F9" android:layout_marginHorizontal="16dp"/>
+                    
                     <!-- Dinner Section -->
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
                             <View android:layout_width="16dp" android:layout_height="16dp" android:background="@drawable/bg_history_badge" android:backgroundTint="#432C7A"/>
                             <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Dinner" android:textColor="#0F172A" android:textSize="14sp" android:textStyle="bold" android:layout_marginStart="8dp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Edit" android:textColor="#432C7A" android:textSize="12sp" android:textStyle="bold"/>
                         </LinearLayout>
-                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="e.g. Roti, Mixed Veg, Soup">
-                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etDinner" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="3"/>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="Slot 1 (e.g. Roti, Mixed Veg)" android:layout_marginBottom="8dp">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etDinner1" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="2"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:boxCornerRadiusTopEnd="12dp" app:counterEnabled="true" app:counterMaxLength="150" android:hint="Slot 2 (e.g. Non-Veg Biryani)">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etDinner2" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="2"/>
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
@@ -175,6 +193,13 @@
                         <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Lunch capacity" android:textColor="#64748B" android:textSize="14sp"/>
                         <com.google.android.material.textfield.TextInputLayout android:layout_width="80dp" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                             <com.google.android.material.textfield.TextInputEditText android:id="@+id/etCapLunch" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:gravity="end" android:text="0" android:padding="8dp"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                        <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Snacks capacity" android:textColor="#64748B" android:textSize="14sp"/>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="80dp" android:layout_height="wrap_content" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+                            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etCapSnacks" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:gravity="end" android:text="0" android:padding="8dp"/>
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 

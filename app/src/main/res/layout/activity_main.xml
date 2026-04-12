@@ -251,6 +251,7 @@
                             android:layout_marginBottom="12dp">
                             <com.google.android.material.chip.Chip android:id="@+id/chipBreakfast" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Breakfast" style="@style/Widget.MaterialComponents.Chip.Choice"/>
                             <com.google.android.material.chip.Chip android:id="@+id/chipLunch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lunch" style="@style/Widget.MaterialComponents.Chip.Choice" android:checked="true"/>
+                            <com.google.android.material.chip.Chip android:id="@+id/chipSnacks" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Snacks" style="@style/Widget.MaterialComponents.Chip.Choice"/>
                             <com.google.android.material.chip.Chip android:id="@+id/chipDinner" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dinner" style="@style/Widget.MaterialComponents.Chip.Choice"/>
                         </com.google.android.material.chip.ChipGroup>
 
@@ -350,6 +351,7 @@
                             android:layout_marginBottom="12dp">
                             <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Breakfast" style="@style/Widget.MaterialComponents.Chip.Choice" android:checked="true"/>
                             <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lunch" style="@style/Widget.MaterialComponents.Chip.Choice"/>
+                            <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Snacks" style="@style/Widget.MaterialComponents.Chip.Choice"/>
                             <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dinner" style="@style/Widget.MaterialComponents.Chip.Choice"/>
                         </com.google.android.material.chip.ChipGroup>
 

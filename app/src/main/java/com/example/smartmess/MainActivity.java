@@ -217,19 +217,21 @@ public class MainActivity extends AppCompatActivity {
     private boolean isMealTimeValid(String mealType) {
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         switch (mealType) {
-            case "breakfast": return hour >= 6  && hour < 10;
-            case "lunch":     return hour >= 11 && hour < 15;
-            case "dinner":    return hour >= 18 && hour < 22;
+            case "breakfast": return hour >= 7  && hour < 11;
+            case "lunch":     return hour >= 11 && hour < 16;
+            case "snacks":    return hour >= 16 && hour < 19;
+            case "dinner":    return hour >= 19 && hour < 22;
             default: return true;
         }
     }
 
     private String mealTimeWindow(String mealType) {
         switch (mealType) {
-            case "breakfast": return "Breakfast entry: 6:00 AM – 10:00 AM";
-            case "lunch":     return "Lunch entry: 11:00 AM – 3:00 PM";
-            case "dinner":    return "Dinner entry: 6:00 PM – 10:00 PM";
-            default: return "";
+            case "breakfast": return "Breakfast entry: 7:00 AM – 11:00 AM";
+            case "lunch":     return "Lunch entry: 11:00 AM – 4:00 PM";
+            case "snacks":    return "Snacks entry: 4:00 PM – 7:00 PM";
+            case "dinner":    return "Dinner entry: 7:00 PM – 10:00 PM";
+            default: return "Unknown Entry window limit exception.";
         }
     }
 

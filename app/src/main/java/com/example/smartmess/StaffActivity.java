@@ -151,6 +151,7 @@ public class StaffActivity extends AppCompatActivity {
 
         tabMeals.addTab(tabMeals.newTab().setText("Breakfast"));
         tabMeals.addTab(tabMeals.newTab().setText("Lunch"));
+        tabMeals.addTab(tabMeals.newTab().setText("Snacks"));
         tabMeals.addTab(tabMeals.newTab().setText("Dinner"));
     }
 

@@ -90,6 +90,25 @@ public class ProfileActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
+
+        View btnChangePassword = findViewById(R.id.btnChangePassword);
+        if (btnChangePassword != null) {
+            btnChangePassword.setOnClickListener(v -> {
+                String email = mAuth.getCurrentUser().getEmail();
+                if (email != null) {
+                    mAuth.sendPasswordResetEmail(email)
+                        .addOnSuccessListener(a -> Toast.makeText(this, "Password reset link securely sent to " + email, Toast.LENGTH_LONG).show())
+                        .addOnFailureListener(e -> Toast.makeText(this, "Network Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                }
+            });
+        }
+        
+        View btnHelp = findViewById(R.id.btnHelp);
+        if (btnHelp != null) {
+            btnHelp.setOnClickListener(v -> {
+                Toast.makeText(this, "Help Desk: Support available at support@smartmess.edu", Toast.LENGTH_LONG).show();
+            });
+        }
     }
 
     private void loadUserProfile() {

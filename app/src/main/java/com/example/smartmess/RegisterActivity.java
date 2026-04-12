@@ -61,6 +61,9 @@ public class RegisterActivity extends AppCompatActivity {
 
         ivBack.setOnClickListener(v -> finish());
         
+        // Hide manual role selector since domains dictate role clearance mapping implicitly
+        findViewById(R.id.llRoleSelector).setVisibility(View.GONE);
+        
         setupRoleCards();
         setupFormProgress();
     }
@@ -141,6 +144,17 @@ public class RegisterActivity extends AppCompatActivity {
             etId.setError("ID is required.");
             return;
         }
+
+        // Domain Constraint Mapping Hook
+        if (email.endsWith("@admin.com")) {
+            selectedRole = "admin";
+        } else if (email.endsWith("@staff.com")) {
+            selectedRole = "staff";
+        } else {
+            // Any generic domain (e.g. @gmail.com) defaults to Student natively 
+            selectedRole = "student";
+        }
+
         if (TextUtils.isEmpty(password)) {
             etPassword.setError("Password is required.");
             return;

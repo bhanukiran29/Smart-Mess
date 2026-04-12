@@ -34,8 +34,12 @@ public class MenuActivity extends AppCompatActivity {
     private ChipGroup chipGroupDays;
     private LinearLayout llContentContainer;
     
-    private TextInputEditText etBreakfast, etLunch, etDinner;
-    private TextInputEditText etCapBfast, etCapLunch, etCapDinner;
+    private TextInputEditText etBreakfast1, etBreakfast2;
+    private TextInputEditText etLunch1, etLunch2;
+    private TextInputEditText etSnacks;
+    private TextInputEditText etDinner1, etDinner2;
+    
+    private TextInputEditText etCapBfast, etCapLunch, etCapSnacks, etCapDinner;
     private MaterialButton btnSaveMenu;
 
     private FirebaseFirestore db;
@@ -63,12 +67,17 @@ public class MenuActivity extends AppCompatActivity {
         chipGroupDays = findViewById(R.id.chipGroupDays);
         llContentContainer = findViewById(R.id.llContentContainer);
 
-        etBreakfast = findViewById(R.id.etBreakfast);
-        etLunch = findViewById(R.id.etLunch);
-        etDinner = findViewById(R.id.etDinner);
+        etBreakfast1 = findViewById(R.id.etBreakfast1);
+        etBreakfast2 = findViewById(R.id.etBreakfast2);
+        etLunch1 = findViewById(R.id.etLunch1);
+        etLunch2 = findViewById(R.id.etLunch2);
+        etSnacks = findViewById(R.id.etSnacks);
+        etDinner1 = findViewById(R.id.etDinner1);
+        etDinner2 = findViewById(R.id.etDinner2);
 
         etCapBfast = findViewById(R.id.etCapBfast);
         etCapLunch = findViewById(R.id.etCapLunch);
+        etCapSnacks = findViewById(R.id.etCapSnacks);
         etCapDinner = findViewById(R.id.etCapDinner);
 
         btnSaveMenu = findViewById(R.id.btnSaveMenu);
@@ -144,11 +153,14 @@ public class MenuActivity extends AppCompatActivity {
     }
 
     private void clearFields() {
-        etBreakfast.setText("");
-        etLunch.setText("");
-        etDinner.setText("");
+        etBreakfast1.setText(""); etBreakfast2.setText("");
+        etLunch1.setText(""); etLunch2.setText("");
+        etSnacks.setText("");
+        etDinner1.setText(""); etDinner2.setText("");
+        
         etCapBfast.setText("0");
         etCapLunch.setText("0");
+        etCapSnacks.setText("0");
         etCapDinner.setText("0");
     }
 
@@ -156,9 +168,25 @@ public class MenuActivity extends AppCompatActivity {
         db.collection("weekly_menu").document(date).get()
                 .addOnSuccessListener(doc -> {
                     if (doc.exists()) {
-                        etBreakfast.setText(doc.getString("breakfast"));
-                        etLunch.setText(doc.getString("lunch"));
-                        etDinner.setText(doc.getString("dinner"));
+                        String b = doc.getString("breakfast");
+                        if (b != null) {
+                            String[] bArr = b.split("\n\\|\\|\\|\n");
+                            etBreakfast1.setText(bArr.length > 0 ? bArr[0] : b);
+                            etBreakfast2.setText(bArr.length > 1 ? bArr[1] : "");
+                        }
+                        String l = doc.getString("lunch");
+                        if (l != null) {
+                            String[] lArr = l.split("\n\\|\\|\\|\n");
+                            etLunch1.setText(lArr.length > 0 ? lArr[0] : l);
+                            etLunch2.setText(lArr.length > 1 ? lArr[1] : "");
+                        }
+                        etSnacks.setText(doc.getString("snacks"));
+                        String d = doc.getString("dinner");
+                        if (d != null) {
+                            String[] dArr = d.split("\n\\|\\|\\|\n");
+                            etDinner1.setText(dArr.length > 0 ? dArr[0] : d);
+                            etDinner2.setText(dArr.length > 1 ? dArr[1] : "");
+                        }
                     }
                 });
 
@@ -167,27 +195,33 @@ public class MenuActivity extends AppCompatActivity {
                     if (doc.exists()) {
                         Long bCap = doc.getLong("breakfast_capacity");
                         Long lCap = doc.getLong("lunch_capacity");
+                        Long sCap = doc.getLong("snacks_capacity");
                         Long dCap = doc.getLong("dinner_capacity");
                         if (bCap != null) etCapBfast.setText(String.valueOf(bCap));
                         if (lCap != null) etCapLunch.setText(String.valueOf(lCap));
+                        if (sCap != null) etCapSnacks.setText(String.valueOf(sCap));
                         if (dCap != null) etCapDinner.setText(String.valueOf(dCap));
                     }
                 });
     }
 
     private void saveMenu() {
-        String breakfast = etBreakfast.getText().toString().trim();
-        String lunch = etLunch.getText().toString().trim();
-        String dinner = etDinner.getText().toString().trim();
+        String b1 = etBreakfast1.getText().toString().trim();
+        String b2 = etBreakfast2.getText().toString().trim();
+        String l1 = etLunch1.getText().toString().trim();
+        String l2 = etLunch2.getText().toString().trim();
+        String snacks = etSnacks.getText().toString().trim();
+        String d1 = etDinner1.getText().toString().trim();
+        String d2 = etDinner2.getText().toString().trim();
+
+        String breakfast = b1 + (b2.isEmpty() ? "" : "\n|||\n" + b2);
+        String lunch = l1 + (l2.isEmpty() ? "" : "\n|||\n" + l2);
+        String dinner = d1 + (d2.isEmpty() ? "" : "\n|||\n" + d2);
 
         String bCapStr = etCapBfast.getText().toString().trim();
         String lCapStr = etCapLunch.getText().toString().trim();
+        String sCapStr = etCapSnacks.getText().toString().trim();
         String dCapStr = etCapDinner.getText().toString().trim();
-
-        if (breakfast.isEmpty() || lunch.isEmpty() || dinner.isEmpty()) {
-            Toast.makeText(this, "Menu fields cannot be empty", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
         btnSaveMenu.setEnabled(false);
         String targetDateStr = weekDates[selectedIndex];
@@ -196,12 +230,14 @@ public class MenuActivity extends AppCompatActivity {
         Map<String, Object> menuData = new HashMap<>();
         menuData.put("breakfast", breakfast);
         menuData.put("lunch", lunch);
+        menuData.put("snacks", snacks);
         menuData.put("dinner", dinner);
         menuData.put("timestamp", System.currentTimeMillis());
 
         Map<String, Object> capacityData = new HashMap<>();
         capacityData.put("breakfast_capacity", bCapStr.isEmpty() ? 0 : Integer.parseInt(bCapStr));
         capacityData.put("lunch_capacity", lCapStr.isEmpty() ? 0 : Integer.parseInt(lCapStr));
+        capacityData.put("snacks_capacity", sCapStr.isEmpty() ? 0 : Integer.parseInt(sCapStr));
         capacityData.put("dinner_capacity", dCapStr.isEmpty() ? 0 : Integer.parseInt(dCapStr));
 
         // Setting capacities properly logic
