@@ -277,12 +277,6 @@
                                 android:layout_height="wrap_content"
                                 app:singleLine="true"
                                 app:singleSelection="true">
-                                <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="7:00 AM - 8:00 AM" style="@style/Widget.MaterialComponents.Chip.Choice"/>
-                                <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="8:00 AM - 9:00 AM" style="@style/Widget.MaterialComponents.Chip.Choice"/>
-                                <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM - 1:00 PM" style="@style/Widget.MaterialComponents.Chip.Choice"/>
-                                <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1:00 PM - 2:00 PM" style="@style/Widget.MaterialComponents.Chip.Choice"/>
-                                <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="7:00 PM - 8:00 PM" style="@style/Widget.MaterialComponents.Chip.Choice"/>
-                                <com.google.android.material.chip.Chip android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="8:00 PM - 9:00 PM" style="@style/Widget.MaterialComponents.Chip.Choice"/>
                             </com.google.android.material.chip.ChipGroup>
                         </HorizontalScrollView>
 

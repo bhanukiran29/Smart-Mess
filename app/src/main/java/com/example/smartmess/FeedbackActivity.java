@@ -103,7 +103,7 @@ public class FeedbackActivity extends AppCompatActivity {
             stars[i].setOnClickListener(v -> {
                 selectedRating = finalI + 1;
                 for (int j = 0; j < 5; j++) {
-                    ImageView targetStar = stars[j];
+                    final ImageView targetStar = stars[j];
                     if (j <= finalI) {
                         targetStar.setImageResource(android.R.drawable.star_on);
                     } else {

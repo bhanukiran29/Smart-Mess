@@ -103,6 +103,13 @@ public class MainActivity extends AppCompatActivity {
         btnSubmitConfirmation.setOnClickListener(v -> submitMealConfirmation());
         btnSubmitRating.setOnClickListener(v -> submitMealRating());
 
+        cgMealType.setOnCheckedChangeListener((group, checkedId) -> {
+            updateTimeSlots();
+        });
+        
+        // Initialization binding slots dynamically
+        updateTimeSlots();
+
         // Bottom Navigation
         btnNavWallet.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, WalletActivity.class)));
         btnNavHistory.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, MealHistoryActivity.class)));
@@ -550,5 +557,43 @@ public class MainActivity extends AppCompatActivity {
                     btnSubmitRating.setEnabled(true);
                     Toast.makeText(MainActivity.this, "Failed to submit rating.", Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private void updateTimeSlots() {
+        cgTimeSlot.removeAllViews();
+        int checkedId = cgMealType.getCheckedChipId();
+        if (checkedId == View.NO_ID) return;
+        
+        String[] slots;
+        if (checkedId == R.id.chipBreakfast) {
+            slots = new String[]{"7:00 AM - 9:00 AM", "9:00 AM - 11:00 AM"};
+        } else if (checkedId == R.id.chipLunch) {
+            slots = new String[]{"11:00 AM - 1:30 PM", "1:30 PM - 4:00 PM"};
+        } else if (checkedId == R.id.chipSnacks) {
+            slots = new String[]{"4:00 PM - 7:00 PM"};
+        } else {
+            slots = new String[]{"7:00 PM - 8:30 PM", "8:30 PM - 10:00 PM"};
+        }
+        
+        for (String slot : slots) {
+            Chip chip = new Chip(MainActivity.this);
+            chip.setText(slot);
+            chip.setCheckable(true);
+            chip.setChipBackgroundColorResource(android.R.color.transparent);
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    buttonView.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#432C7A")));
+                    buttonView.setTextColor(android.graphics.Color.parseColor("#FFFFFF"));
+                } else {
+                    buttonView.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9")));
+                    buttonView.setTextColor(android.graphics.Color.parseColor("#64748B"));
+                }
+            });
+            chip.setChecked(false);
+            chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9")));
+            chip.setTextColor(android.graphics.Color.parseColor("#64748B"));
+            
+            cgTimeSlot.addView(chip);
+        }
     }
 }
