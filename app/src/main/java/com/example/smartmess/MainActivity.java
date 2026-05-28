@@ -22,7 +22,8 @@ import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
-import com.example.smartmess.models.Confirmation;
+import com.example.smartmess.models.ConfirmationRecord;
+import com.example.smartmess.repository.MealHistoryRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -42,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import androidx.activity.result.ActivityResultLauncher;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
-import com.google.firebase.firestore.FieldValue;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -60,7 +60,12 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
+    private MealHistoryRepository mealHistoryRepository;
     private String currentDate;
+
+    // Keep a reference to MealHistoryActivity if it is open so we can push
+    // new confirmations to it in real-time without requiring a screen reopen.
+    private MealHistoryActivity openHistoryActivity;
 
     // Register ZXing barcode scanner
     private final ActivityResultLauncher<ScanOptions> barcodeLauncher = registerForActivityResult(new ScanContract(),
@@ -79,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        mealHistoryRepository = new MealHistoryRepository(db);
 
         if (mAuth.getCurrentUser() == null) {
             startActivity(new Intent(this, LoginActivity.class));
@@ -448,48 +454,67 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // 1. Get Selected Meal Type (Breakfast/Lunch/Dinner)
+        // 1. Get Selected Meal Type
         int selectedChipId = cgMealType.getCheckedChipId();
         if (selectedChipId == View.NO_ID) {
-            Toast.makeText(this, "Please select a meal (Breakfast, Lunch, or Dinner)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please select a meal (Breakfast, Lunch, Snacks or Dinner)", Toast.LENGTH_SHORT).show();
             return;
         }
         Chip selectedChip = findViewById(selectedChipId);
         String mealType = selectedChip.getText().toString().toLowerCase();
 
-        // 2. Get Eat Status
+        // 2. Get Eat/Skip Status
         int selectedStatusId = cgStatus.getCheckedChipId();
         if (selectedStatusId == View.NO_ID) {
             Toast.makeText(this, "Please select if you will eat or skip.", Toast.LENGTH_SHORT).show();
             return;
         }
-        String status = (selectedStatusId == R.id.chipEat) ? "eat" : "not_eat";
+        boolean isEating = (selectedStatusId == R.id.chipEat);
+        String status = isEating ? "eat" : "not_eat";
 
-        // 3. Get Time Slot
+        // 3. Get Time Slot (required only when eating)
         int timeSlotId = cgTimeSlot.getCheckedChipId();
-        if (status.equals("eat") && timeSlotId == View.NO_ID) {
+        if (isEating && timeSlotId == View.NO_ID) {
             Toast.makeText(this, "Please select an eating time slot.", Toast.LENGTH_SHORT).show();
             return;
         }
-        String timeSlot = status.equals("eat") ? ((Chip) findViewById(timeSlotId)).getText().toString() : "Skipped";
+        String timeSlot = isEating
+                ? ((Chip) findViewById(timeSlotId)).getText().toString()
+                : "Skipping";
 
         progressBar.setVisibility(View.VISIBLE);
         btnSubmitConfirmation.setEnabled(false);
 
-        // Build Confirmation Object
         String userId = mAuth.getCurrentUser().getUid();
-        Confirmation confirmation = new Confirmation(userId, status, timeSlot, System.currentTimeMillis());
 
-        // Save to Database Path: confirmations / date / mealType / userId
-        db.collection("confirmations")
-                .document(currentDate)
-                .collection(mealType)
-                .document(userId)
-                .set(confirmation);
+        // Dual-write via repository:
+        //   Write 1 → confirmations/{date}/{meal}/{uid}       (existing shared structure)
+        //   Write 2 → user_confirmations/{uid}/records/{key}  (new user-side history)
+        mealHistoryRepository.saveConfirmation(
+                userId, currentDate, mealType, status, timeSlot,
+                new MealHistoryRepository.SaveCallback() {
+                    @Override
+                    public void onSuccess(ConfirmationRecord saved) {
+                        progressBar.setVisibility(View.GONE);
+                        btnSubmitConfirmation.setEnabled(true);
 
-        progressBar.setVisibility(View.GONE);
-        btnSubmitConfirmation.setEnabled(true);
-        Toast.makeText(MainActivity.this, "Meal Confirmed Successfully!", Toast.LENGTH_SHORT).show();
+                        // Build a human-readable success message
+                        String mealLabel = capitalize(mealType);
+                        String action    = isEating ? "booked" : "skipped";
+                        String slotPart  = isEating ? " · " + timeSlot : "";
+                        String msg = "Tomorrow's " + mealLabel + " " + action + " successfully" + slotPart;
+                        Toast.makeText(MainActivity.this, "✅ " + msg, Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        progressBar.setVisibility(View.GONE);
+                        btnSubmitConfirmation.setEnabled(true);
+                        Toast.makeText(MainActivity.this,
+                                "Failed to save confirmation. Try again.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
     }
 
     private void loadTodaysMenu() {
