@@ -54,4 +54,7 @@ dependencies {
 
     // WorkManager for background tasks
     implementation 'androidx.work:work-runtime:2.9.0'
+
+    // RecyclerView for Meal History lists
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
 }

@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -----------------------------------------------------------------------
+    // Users — each user can read/write their own profile
+    // -----------------------------------------------------------------------
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admins can read all users
+      allow read: if request.auth != null
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // -----------------------------------------------------------------------
+    // Meal confirmations — shared collection written by students, read by staff/admin
+    // -----------------------------------------------------------------------
+    match /confirmations/{date}/{meal}/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "staff"];
+    }
+
+    // -----------------------------------------------------------------------
+    // user_confirmations — private per-user history for the Upcoming tab
+    // Each student can only read/write their own records.
+    // -----------------------------------------------------------------------
+    match /user_confirmations/{userId}/records/{recordId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // -----------------------------------------------------------------------
+    // Scan logs — written by the student app on QR scan, read by staff/admin
+    // -----------------------------------------------------------------------
+    match /scanLogs/{date}/{meal}/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "staff"];
+    }
+
+    // -----------------------------------------------------------------------
+    // Meal capacity — written by admin, read by all authenticated users
+    // -----------------------------------------------------------------------
+    match /meal_capacity/{date} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "staff"];
+    }
+
+    // -----------------------------------------------------------------------
+    // Weekly menu — written by admin, read by all authenticated users
+    // -----------------------------------------------------------------------
+    match /weekly_menu/{date} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // -----------------------------------------------------------------------
+    // Wallets & transactions — private per-user
+    // -----------------------------------------------------------------------
+    match /wallets/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /wallet_transactions/{userId}/txns/{txnId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // -----------------------------------------------------------------------
+    // Meal ratings — written by students, read by admin
+    // -----------------------------------------------------------------------
+    match /meal_ratings/{date}/{meal}/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // -----------------------------------------------------------------------
+    // Feedback — written by students, read/updated by admin
+    // -----------------------------------------------------------------------
+    match /feedback/{feedbackId} {
+      allow create: if request.auth != null;
+      allow read, update: if request.auth != null
+                          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // -----------------------------------------------------------------------
+    // Waste data — written by staff, read by admin
+    // -----------------------------------------------------------------------
+    match /waste_data/{date}/{meal}/{docId} {
+      allow write: if request.auth != null
+                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "staff";
+      allow read: if request.auth != null
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "staff"];
+    }
+  }
+}

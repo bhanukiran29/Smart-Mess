@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_confirmation.xml
+    Row layout for a single upcoming meal confirmation in the RecyclerView.
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#E2E8F0"
+    app:cardBackgroundColor="#FFFFFF">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="14dp">
+
+        <!-- Coloured status bar on the left -->
+        <View
+            android:id="@+id/viewStatusBar"
+            android:layout_width="4dp"
+            android:layout_height="0dp"
+            android:background="#22C55E"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Meal icon -->
+        <TextView
+            android:id="@+id/tvMealIcon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:textSize="22sp"
+            android:text="🍳"
+            app:layout_constraintStart_toEndOf="@id/viewStatusBar"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="10dp" />
+
+        <!-- Date + Meal type -->
+        <TextView
+            android:id="@+id/tvConfirmDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="May 30, 2026"
+            android:textColor="#0F172A"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@id/tvMealIcon"
+            app:layout_constraintEnd_toStartOf="@id/tvStatusBadge"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/tvMealType"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Breakfast"
+            android:textColor="#64748B"
+            android:textSize="12sp"
+            app:layout_constraintStart_toEndOf="@id/tvMealIcon"
+            app:layout_constraintEnd_toStartOf="@id/tvStatusBadge"
+            app:layout_constraintTop_toBottomOf="@id/tvConfirmDate"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="2dp" />
+
+        <!-- Time slot -->
+        <TextView
+            android:id="@+id/tvTimeSlot"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="🕐 7:00 AM – 8:00 AM"
+            android:textColor="#94A3B8"
+            android:textSize="11sp"
+            app:layout_constraintStart_toEndOf="@id/tvMealIcon"
+            app:layout_constraintEnd_toStartOf="@id/tvStatusBadge"
+            app:layout_constraintTop_toBottomOf="@id/tvMealType"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="2dp" />
+
+        <!-- Confirmed at -->
+        <TextView
+            android:id="@+id/tvConfirmedAt"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Confirmed at 9:00 PM"
+            android:textColor="#CBD5E1"
+            android:textSize="10sp"
+            app:layout_constraintStart_toEndOf="@id/tvMealIcon"
+            app:layout_constraintEnd_toStartOf="@id/tvStatusBadge"
+            app:layout_constraintTop_toBottomOf="@id/tvTimeSlot"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="4dp"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Status badge (Eating / Skipping) -->
+        <TextView
+            android:id="@+id/tvStatusBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Eating"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/bg_badge_green"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>
