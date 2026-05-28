@@ -78,9 +78,13 @@ public class StaffActivity extends AppCompatActivity {
             @Override public void onTabSelected(TabLayout.Tab tab) {
                 switch (tab.getPosition()) {
                     case 0: selectedMeal = "breakfast"; break;
-                    case 1: selectedMeal = "lunch"; break;
-                    case 2: selectedMeal = "dinner"; break;
+                    case 1: selectedMeal = "lunch";     break;
+                    case 2: selectedMeal = "snacks";    break;
+                    case 3: selectedMeal = "dinner";    break;
+                    default: selectedMeal = "breakfast"; break;
                 }
+                android.util.Log.d("QR_DEBUG", "Tab selected: position=" + tab.getPosition()
+                        + " → selectedMeal=" + selectedMeal);
             }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
             @Override public void onTabReselected(TabLayout.Tab tab) {}
@@ -98,6 +102,9 @@ public class StaffActivity extends AppCompatActivity {
 
     private void generateQRCode() {
         try {
+            android.util.Log.d("QR_DEBUG", "Generating QR — selectedMeal=" + selectedMeal
+                    + ", date=" + currentDate);
+
             String qrData = "SMART_MESS_" + selectedMeal + "_" + currentDate;
             BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
             Bitmap bitmap = barcodeEncoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 600, 600);
