@@ -6,8 +6,6 @@ import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
@@ -54,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton btnSubmitConfirmation, btnScanQR;
     private TextView btnSubmitRating;
     private LinearLayout btnNavHome, btnNavHistory, btnNavWallet, btnNavProfile;
-    private Button btnLogout;
     private ProgressBar progressBar;
     private View cardTodaysMenu, cardConfirmTomorrow, cardRateMeal;
 
@@ -99,12 +96,6 @@ public class MainActivity extends AppCompatActivity {
         checkNotificationPermission();
         scheduleMealReminder();
         runEntryAnimations();
-
-        btnLogout.setOnClickListener(v -> {
-            mAuth.signOut();
-            startActivity(new Intent(MainActivity.this, LoginActivity.class));
-            finish();
-        });
 
         btnSubmitConfirmation.setOnClickListener(v -> submitMealConfirmation());
         btnSubmitRating.setOnClickListener(v -> submitMealRating());
@@ -397,7 +388,6 @@ public class MainActivity extends AppCompatActivity {
         btnNavWallet = findViewById(R.id.btnNavWallet);
         btnNavProfile = findViewById(R.id.btnNavProfile);
         
-        btnLogout = findViewById(R.id.btnLogout);
         progressBar = findViewById(R.id.progressBar);
         
         if(rowBreakfast != null) {
