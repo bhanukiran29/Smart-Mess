@@ -70,30 +70,47 @@ public class FeedbackActivity extends AppCompatActivity {
 
     private void setupChips() {
         int[] chipIds = {R.id.chip1, R.id.chip2, R.id.chip3, R.id.chip4, R.id.chip5};
-        
+
+        // Colours defined once — reused for every chip
+        android.content.res.ColorStateList bgSelected   =
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#1E3A8A"));
+        android.content.res.ColorStateList bgUnselected =
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9"));
+
         for (int id : chipIds) {
             Chip chip = findViewById(id);
-            chip.setChipBackgroundColorResource(android.R.color.transparent);
-            
+
+            // Start every chip in the unselected visual state.
+            // Use setChipBackgroundColor (NOT setBackgroundTintList) so the
+            // chip surface colour is set correctly — mixing the two APIs causes
+            // the background to become transparent and text to disappear.
+            chip.setChipBackgroundColor(bgUnselected);
+            chip.setTextColor(android.graphics.Color.parseColor("#64748B"));
+            // Hide the default checked-icon so it doesn't overlap the text
+            chip.setCheckedIconVisible(false);
+
             chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isChecked) {
                     selectedCategory = chip.getText().toString();
-                    chip.setChipBackgroundColorResource(android.R.color.transparent);
-                    chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#1E3A8A"))); // Navy
+                    chip.setChipBackgroundColor(bgSelected);
                     chip.setTextColor(android.graphics.Color.WHITE);
-                    
-                    // Bounce animation mapping to user prompt
+
+                    // Bounce animation on selection
                     chip.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150)
-                            .withEndAction(() -> chip.animate().scaleX(1f).scaleY(1f).setDuration(150).setInterpolator(new OvershootInterpolator()).start())
+                            .withEndAction(() -> chip.animate()
+                                    .scaleX(1f).scaleY(1f)
+                                    .setDuration(150)
+                                    .setInterpolator(new OvershootInterpolator())
+                                    .start())
                             .start();
                 } else {
-                    chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9")));
+                    chip.setChipBackgroundColor(bgUnselected);
                     chip.setTextColor(android.graphics.Color.parseColor("#64748B"));
                 }
             });
         }
-        
-        // Select first by default
+
+        // Select "Food Quality" chip by default
         ((Chip) findViewById(R.id.chip1)).setChecked(true);
     }
 
