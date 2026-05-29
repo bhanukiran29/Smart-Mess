@@ -90,25 +90,33 @@
                         
                         <!-- Breakfast -->
                         <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Breakfast" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold"/>
-                            <TextView android:id="@+id/tvCountBfast" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="36sp" android:textStyle="bold"/>
-                            <TextView android:id="@+id/tvCapBfast" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="12sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Breakfast" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCountBfast" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="30sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCapBfast" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="11sp"/>
                             <ProgressBar android:id="@+id/pbBfast" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp" android:progress="0" android:progressTint="#00A34F" android:progressBackgroundTint="#F1F5F9"/>
                         </LinearLayout>
                         
                         <!-- Lunch -->
-                        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginHorizontal="8dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lunch" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold"/>
-                            <TextView android:id="@+id/tvCountLunch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="36sp" android:textStyle="bold"/>
-                            <TextView android:id="@+id/tvCapLunch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="12sp"/>
+                        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginStart="8dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lunch" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCountLunch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="30sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCapLunch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="11sp"/>
                             <ProgressBar android:id="@+id/pbLunch" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp" android:progress="0" android:progressTint="#00A34F" android:progressBackgroundTint="#F1F5F9"/>
                         </LinearLayout>
                         
+                        <!-- Snacks -->
+                        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginStart="8dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Snacks" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCountSnacks" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="30sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCapSnacks" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="11sp"/>
+                            <ProgressBar android:id="@+id/pbSnacks" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp" android:progress="0" android:progressTint="#00A34F" android:progressBackgroundTint="#F1F5F9"/>
+                        </LinearLayout>
+
                         <!-- Dinner -->
-                        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dinner" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold"/>
-                            <TextView android:id="@+id/tvCountDinner" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="36sp" android:textStyle="bold"/>
-                            <TextView android:id="@+id/tvCapDinner" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="12sp"/>
+                        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginStart="8dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dinner" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCountDinner" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#0F6E56" android:textSize="30sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tvCapDinner" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0/0" android:textColor="#94A3B8" android:textSize="11sp"/>
                             <ProgressBar android:id="@+id/pbDinner" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp" android:progress="0" android:progressTint="#00A34F" android:progressBackgroundTint="#F1F5F9"/>
                         </LinearLayout>
                     </LinearLayout>

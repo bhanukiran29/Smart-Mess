@@ -44,8 +44,9 @@ public class StaffActivity extends AppCompatActivity {
     private ImageView ivQrCode;
     private View vPulseDot;
 
-    private TextView tvCountBfast, tvCapBfast, tvCountLunch, tvCapLunch, tvCountDinner, tvCapDinner;
-    private ProgressBar pbBfast, pbLunch, pbDinner;
+    private TextView tvCountBfast, tvCapBfast, tvCountLunch, tvCapLunch,
+                     tvCountSnacks, tvCapSnacks, tvCountDinner, tvCapDinner;
+    private ProgressBar pbBfast, pbLunch, pbSnacks, pbDinner;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -53,7 +54,8 @@ public class StaffActivity extends AppCompatActivity {
     private String selectedMeal = "breakfast";
     private ListenerRegistration counterListener;
 
-    private int lastBfast = -1, lastLunch = -1, lastDinner = -1;
+    // Track last-known scanned values to decide whether to animate
+    private int lastBfast = -1, lastLunch = -1, lastSnacks = -1, lastDinner = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,9 +80,13 @@ public class StaffActivity extends AppCompatActivity {
             @Override public void onTabSelected(TabLayout.Tab tab) {
                 switch (tab.getPosition()) {
                     case 0: selectedMeal = "breakfast"; break;
-                    case 1: selectedMeal = "lunch"; break;
-                    case 2: selectedMeal = "dinner"; break;
+                    case 1: selectedMeal = "lunch";     break;
+                    case 2: selectedMeal = "snacks";    break;
+                    case 3: selectedMeal = "dinner";    break;
+                    default: selectedMeal = "breakfast"; break;
                 }
+                android.util.Log.d("QR_DEBUG", "Tab selected: position=" + tab.getPosition()
+                        + " → selectedMeal=" + selectedMeal);
             }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
             @Override public void onTabReselected(TabLayout.Tab tab) {}
@@ -98,6 +104,9 @@ public class StaffActivity extends AppCompatActivity {
 
     private void generateQRCode() {
         try {
+            android.util.Log.d("QR_DEBUG", "Generating QR — selectedMeal=" + selectedMeal
+                    + ", date=" + currentDate);
+
             String qrData = "SMART_MESS_" + selectedMeal + "_" + currentDate;
             BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
             Bitmap bitmap = barcodeEncoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 600, 600);
@@ -142,11 +151,14 @@ public class StaffActivity extends AppCompatActivity {
         tvCapBfast = findViewById(R.id.tvCapBfast);
         tvCountLunch = findViewById(R.id.tvCountLunch);
         tvCapLunch = findViewById(R.id.tvCapLunch);
+        tvCountSnacks = findViewById(R.id.tvCountSnacks);
+        tvCapSnacks = findViewById(R.id.tvCapSnacks);
         tvCountDinner = findViewById(R.id.tvCountDinner);
         tvCapDinner = findViewById(R.id.tvCapDinner);
 
         pbBfast = findViewById(R.id.pbBfast);
         pbLunch = findViewById(R.id.pbLunch);
+        pbSnacks = findViewById(R.id.pbSnacks);
         pbDinner = findViewById(R.id.pbDinner);
 
         tabMeals.addTab(tabMeals.newTab().setText("Breakfast"));
@@ -180,13 +192,15 @@ public class StaffActivity extends AppCompatActivity {
                 .addSnapshotListener((doc, e) -> {
                     if (e != null || doc == null || !doc.exists()) return;
 
-                    int[] bfastVals = getVals(doc, "breakfast");
-                    int[] lunchVals = getVals(doc, "lunch");
+                    int[] bfastVals  = getVals(doc, "breakfast");
+                    int[] lunchVals  = getVals(doc, "lunch");
+                    int[] snacksVals = getVals(doc, "snacks");
                     int[] dinnerVals = getVals(doc, "dinner");
 
-                    updateCounterNode(tvCountBfast, tvCapBfast, pbBfast, bfastVals[0], bfastVals[1], 1);
-                    updateCounterNode(tvCountLunch, tvCapLunch, pbLunch, lunchVals[0], lunchVals[1], 2);
-                    updateCounterNode(tvCountDinner, tvCapDinner, pbDinner, dinnerVals[0], dinnerVals[1], 3);
+                    updateCounterNode(tvCountBfast,  tvCapBfast,  pbBfast,  bfastVals[0],  bfastVals[1],  "breakfast");
+                    updateCounterNode(tvCountLunch,  tvCapLunch,  pbLunch,  lunchVals[0],  lunchVals[1],  "lunch");
+                    updateCounterNode(tvCountSnacks, tvCapSnacks, pbSnacks, snacksVals[0], snacksVals[1], "snacks");
+                    updateCounterNode(tvCountDinner, tvCapDinner, pbDinner, dinnerVals[0], dinnerVals[1], "dinner");
                 });
     }
 
@@ -196,26 +210,48 @@ public class StaffActivity extends AppCompatActivity {
         return new int[]{scanned != null ? scanned.intValue() : 0, cap != null ? cap.intValue() : 0};
     }
 
-    private void updateCounterNode(TextView tvCount, TextView tvCap, ProgressBar pb, int scanned, int capacity, int nodeType) {
+    private void updateCounterNode(TextView tvCount, TextView tvCap, ProgressBar pb,
+                                   int scanned, int capacity, String meal) {
         tvCap.setText(scanned + "/" + capacity);
         int percent = capacity > 0 ? (int) (((double) scanned / capacity) * 100) : 0;
         pb.setProgress(percent);
 
-        int colorCode = Color.parseColor("#00A34F"); // Green
-        if (percent > 95) colorCode = Color.parseColor("#EF4444"); // Red
-        else if (percent >= 80) colorCode = Color.parseColor("#F59E0B"); // Amber
+        // Color: green → amber (≥80%) → red (>95%)
+        int colorCode = Color.parseColor("#00A34F");
+        if (percent > 95)     colorCode = Color.parseColor("#EF4444");
+        else if (percent >= 80) colorCode = Color.parseColor("#F59E0B");
         pb.setProgressTintList(android.content.res.ColorStateList.valueOf(colorCode));
 
+        // Determine whether the count changed since last snapshot (to animate)
         boolean shouldAnimate = false;
-        if (nodeType == 1 && lastBfast != scanned) { shouldAnimate = lastBfast != -1; lastBfast = scanned; }
-        if (nodeType == 2 && lastLunch != scanned) { shouldAnimate = lastLunch != -1; lastLunch = scanned; }
-        if (nodeType == 3 && lastDinner != scanned) { shouldAnimate = lastDinner != -1; lastDinner = scanned; }
+        switch (meal) {
+            case "breakfast":
+                shouldAnimate = lastBfast != -1 && lastBfast != scanned;
+                lastBfast = scanned;
+                break;
+            case "lunch":
+                shouldAnimate = lastLunch != -1 && lastLunch != scanned;
+                lastLunch = scanned;
+                break;
+            case "snacks":
+                shouldAnimate = lastSnacks != -1 && lastSnacks != scanned;
+                lastSnacks = scanned;
+                break;
+            case "dinner":
+                shouldAnimate = lastDinner != -1 && lastDinner != scanned;
+                lastDinner = scanned;
+                break;
+        }
 
         if (shouldAnimate) {
             tvCount.animate().translationY(-20f).alpha(0f).setDuration(150).withEndAction(() -> {
                 tvCount.setText(String.valueOf(scanned));
                 tvCount.setTranslationY(20f);
-                tvCount.animate().translationY(0f).alpha(1f).setDuration(150).setInterpolator(new OvershootInterpolator()).start();
+                tvCount.animate()
+                        .translationY(0f).alpha(1f)
+                        .setDuration(150)
+                        .setInterpolator(new OvershootInterpolator())
+                        .start();
             }).start();
         } else {
             tvCount.setText(String.valueOf(scanned));
