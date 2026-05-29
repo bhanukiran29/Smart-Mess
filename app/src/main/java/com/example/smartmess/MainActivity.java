@@ -34,8 +34,10 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -48,6 +50,10 @@ public class MainActivity extends AppCompatActivity {
     private View rowBreakfast, rowLunch, rowDinner;
     private TextView tvWalletBalance;
     private ChipGroup cgMealType, cgStatus, cgTimeSlot, cgRatingMeal;
+    
+    // Track selected meals and time slots for multi-selection
+    private Set<String> selectedMeals = new HashSet<>();
+    private Set<String> selectedTimeSlots = new HashSet<>();
     private RatingBar ratingBarMeal;
     private MaterialButton btnSubmitConfirmation, btnScanQR;
     private TextView btnSubmitRating;
@@ -100,9 +106,11 @@ public class MainActivity extends AppCompatActivity {
         btnSubmitConfirmation.setOnClickListener(v -> submitMealConfirmation());
         btnSubmitRating.setOnClickListener(v -> submitMealRating());
 
-        cgMealType.setOnCheckedChangeListener((group, checkedId) -> {
-            updateTimeSlots();
-        });
+        // Set up meal type chips with multi-selection and green color
+        setupMealTypeChips();
+        
+        // Set up time slot chips (will be populated dynamically)
+        setupTimeSlotChips();
         
         // Initialization binding slots dynamically
         updateTimeSlots();
@@ -444,14 +452,11 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // 1. Get Selected Meal Type
-        int selectedChipId = cgMealType.getCheckedChipId();
-        if (selectedChipId == View.NO_ID) {
-            Toast.makeText(this, "Please select a meal (Breakfast, Lunch, Snacks or Dinner)", Toast.LENGTH_SHORT).show();
+        // 1. Check if any meals are selected
+        if (selectedMeals.isEmpty()) {
+            Toast.makeText(this, "Please select at least one meal (Breakfast, Lunch, Snacks or Dinner)", Toast.LENGTH_SHORT).show();
             return;
         }
-        Chip selectedChip = findViewById(selectedChipId);
-        String mealType = selectedChip.getText().toString().toLowerCase();
 
         // 2. Get Eat/Skip Status
         int selectedStatusId = cgStatus.getCheckedChipId();
@@ -462,49 +467,94 @@ public class MainActivity extends AppCompatActivity {
         boolean isEating = (selectedStatusId == R.id.chipEat);
         String status = isEating ? "eat" : "not_eat";
 
-        // 3. Get Time Slot (required only when eating)
-        int timeSlotId = cgTimeSlot.getCheckedChipId();
-        if (isEating && timeSlotId == View.NO_ID) {
-            Toast.makeText(this, "Please select an eating time slot.", Toast.LENGTH_SHORT).show();
+        // 3. Check time slots (required only when eating)
+        if (isEating && selectedTimeSlots.isEmpty()) {
+            Toast.makeText(this, "Please select at least one eating time slot.", Toast.LENGTH_SHORT).show();
             return;
         }
-        String timeSlot = isEating
-                ? ((Chip) findViewById(timeSlotId)).getText().toString()
-                : "Skipping";
 
         progressBar.setVisibility(View.VISIBLE);
         btnSubmitConfirmation.setEnabled(false);
 
         String userId = mAuth.getCurrentUser().getUid();
+        
+        // Save confirmations for each selected meal
+        int totalConfirmations = selectedMeals.size();
+        final int[] completedConfirmations = {0};
+        final boolean[] hasError = {false};
 
-        // Dual-write via repository:
-        //   Write 1 → confirmations/{date}/{meal}/{uid}       (existing shared structure)
-        //   Write 2 → user_confirmations/{uid}/records/{key}  (new user-side history)
-        mealHistoryRepository.saveConfirmation(
-                userId, currentDate, mealType, status, timeSlot,
-                new MealHistoryRepository.SaveCallback() {
-                    @Override
-                    public void onSuccess(ConfirmationRecord saved) {
-                        progressBar.setVisibility(View.GONE);
-                        btnSubmitConfirmation.setEnabled(true);
+        for (String mealType : selectedMeals) {
+            String timeSlot = isEating && !selectedTimeSlots.isEmpty() 
+                ? String.join(", ", selectedTimeSlots) 
+                : "Skipping";
 
-                        // Build a human-readable success message
-                        String mealLabel = capitalize(mealType);
-                        String action    = isEating ? "booked" : "skipped";
-                        String slotPart  = isEating ? " · " + timeSlot : "";
-                        String msg = "Tomorrow's " + mealLabel + " " + action + " successfully" + slotPart;
-                        Toast.makeText(MainActivity.this, "✅ " + msg, Toast.LENGTH_LONG).show();
+            mealHistoryRepository.saveConfirmation(
+                    userId, currentDate, mealType.toLowerCase(), status, timeSlot,
+                    new MealHistoryRepository.SaveCallback() {
+                        @Override
+                        public void onSuccess(ConfirmationRecord saved) {
+                            completedConfirmations[0]++;
+                            
+                            if (completedConfirmations[0] == totalConfirmations && !hasError[0]) {
+                                progressBar.setVisibility(View.GONE);
+                                btnSubmitConfirmation.setEnabled(true);
+
+                                // Build success message
+                                String mealsText = selectedMeals.size() == 1 
+                                    ? selectedMeals.iterator().next()
+                                    : selectedMeals.size() + " meals";
+                                String action = isEating ? "booked" : "skipped";
+                                String slotPart = isEating && !selectedTimeSlots.isEmpty() 
+                                    ? " · " + String.join(", ", selectedTimeSlots) 
+                                    : "";
+                                String msg = "Tomorrow's " + mealsText + " " + action + " successfully" + slotPart;
+                                Toast.makeText(MainActivity.this, "✅ " + msg, Toast.LENGTH_LONG).show();
+                                
+                                // Clear selections after successful submission
+                                clearAllSelections();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            if (!hasError[0]) {
+                                hasError[0] = true;
+                                progressBar.setVisibility(View.GONE);
+                                btnSubmitConfirmation.setEnabled(true);
+                                Toast.makeText(MainActivity.this,
+                                        "Failed to save confirmation. Try again.", Toast.LENGTH_SHORT).show();
+                            }
+                        }
                     }
-
-                    @Override
-                    public void onFailure(Exception e) {
-                        progressBar.setVisibility(View.GONE);
-                        btnSubmitConfirmation.setEnabled(true);
-                        Toast.makeText(MainActivity.this,
-                                "Failed to save confirmation. Try again.", Toast.LENGTH_SHORT).show();
-                    }
-                }
-        );
+            );
+        }
+    }
+    
+    private void clearAllSelections() {
+        // Clear meal selections
+        selectedMeals.clear();
+        for (int i = 0; i < cgMealType.getChildCount(); i++) {
+            View child = cgMealType.getChildAt(i);
+            if (child instanceof Chip) {
+                Chip chip = (Chip) child;
+                chip.setChecked(false);
+                updateMealChipAppearance(chip, false);
+            }
+        }
+        
+        // Clear time slot selections
+        selectedTimeSlots.clear();
+        for (int i = 0; i < cgTimeSlot.getChildCount(); i++) {
+            View child = cgTimeSlot.getChildAt(i);
+            if (child instanceof Chip) {
+                Chip chip = (Chip) child;
+                chip.setChecked(false);
+                updateTimeSlotChipAppearance(chip, false);
+            }
+        }
+        
+        // Update time slots display
+        updateTimeSlots();
     }
 
     private void loadTodaysMenu() {
@@ -576,39 +626,150 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateTimeSlots() {
         cgTimeSlot.removeAllViews();
-        int checkedId = cgMealType.getCheckedChipId();
-        if (checkedId == View.NO_ID) return;
+        selectedTimeSlots.clear();
         
-        String[] slots;
-        if (checkedId == R.id.chipBreakfast) {
-            slots = new String[]{"7:00 AM - 9:00 AM", "9:00 AM - 11:00 AM"};
-        } else if (checkedId == R.id.chipLunch) {
-            slots = new String[]{"11:00 AM - 1:30 PM", "1:30 PM - 4:00 PM"};
-        } else if (checkedId == R.id.chipSnacks) {
-            slots = new String[]{"4:00 PM - 7:00 PM"};
-        } else {
-            slots = new String[]{"7:00 PM - 8:30 PM", "8:30 PM - 10:00 PM"};
+        // Show time slots for all selected meals
+        Set<String> allSlots = new HashSet<>();
+        
+        for (String mealType : selectedMeals) {
+            String[] slots = getTimeSlotsForMeal(mealType);
+            for (String slot : slots) {
+                allSlots.add(slot);
+            }
         }
         
-        for (String slot : slots) {
+        // If no meals selected, show default slots
+        if (selectedMeals.isEmpty()) {
+            String[] defaultSlots = {"7:00 AM - 9:00 AM", "9:00 AM - 11:00 AM", 
+                                   "11:00 AM - 1:30 PM", "1:30 PM - 4:00 PM", 
+                                   "4:00 PM - 7:00 PM", "7:00 PM - 8:30 PM", 
+                                   "8:30 PM - 10:00 PM"};
+            for (String slot : defaultSlots) {
+                allSlots.add(slot);
+            }
+        }
+        
+        for (String slot : allSlots) {
             Chip chip = new Chip(MainActivity.this);
             chip.setText(slot);
             chip.setCheckable(true);
-            chip.setChipBackgroundColorResource(android.R.color.transparent);
-            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    buttonView.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#432C7A")));
-                    buttonView.setTextColor(android.graphics.Color.parseColor("#FFFFFF"));
+            
+            // Set up click listener for toggle behavior
+            chip.setOnClickListener(v -> {
+                Chip clickedChip = (Chip) v;
+                String slotText = clickedChip.getText().toString();
+                
+                if (selectedTimeSlots.contains(slotText)) {
+                    // Deselect
+                    selectedTimeSlots.remove(slotText);
+                    clickedChip.setChecked(false);
+                    updateTimeSlotChipAppearance(clickedChip, false);
                 } else {
-                    buttonView.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9")));
-                    buttonView.setTextColor(android.graphics.Color.parseColor("#64748B"));
+                    // Select
+                    selectedTimeSlots.add(slotText);
+                    clickedChip.setChecked(true);
+                    updateTimeSlotChipAppearance(clickedChip, true);
                 }
             });
+            
+            // Set initial appearance
             chip.setChecked(false);
-            chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9")));
-            chip.setTextColor(android.graphics.Color.parseColor("#64748B"));
+            updateTimeSlotChipAppearance(chip, false);
             
             cgTimeSlot.addView(chip);
+        }
+    }
+    
+    private String[] getTimeSlotsForMeal(String mealType) {
+        switch (mealType.toLowerCase()) {
+            case "breakfast":
+                return new String[]{"7:00 AM - 9:00 AM", "9:00 AM - 11:00 AM"};
+            case "lunch":
+                return new String[]{"11:00 AM - 1:30 PM", "1:30 PM - 4:00 PM"};
+            case "snacks":
+                return new String[]{"4:00 PM - 7:00 PM"};
+            case "dinner":
+                return new String[]{"7:00 PM - 8:30 PM", "8:30 PM - 10:00 PM"};
+            default:
+                return new String[]{};
+        }
+    }
+    
+    private void setupMealTypeChips() {
+        // Set up each meal chip with custom click behavior
+        setupMealChip(R.id.chipBreakfast, "Breakfast");
+        setupMealChip(R.id.chipLunch, "Lunch");
+        setupMealChip(R.id.chipSnacks, "Snacks");
+        setupMealChip(R.id.chipDinner, "Dinner");
+    }
+    
+    private void setupMealChip(int chipId, String mealType) {
+        Chip chip = findViewById(chipId);
+        if (chip != null) {
+            // Ensure chip is checkable and clear any default styling
+            chip.setCheckable(true);
+            chip.setChecked(false);
+            
+            chip.setOnClickListener(v -> {
+                Chip clickedChip = (Chip) v;
+                
+                if (selectedMeals.contains(mealType)) {
+                    // Deselect
+                    selectedMeals.remove(mealType);
+                    clickedChip.setChecked(false);
+                    updateMealChipAppearance(clickedChip, false);
+                } else {
+                    // Select
+                    selectedMeals.add(mealType);
+                    clickedChip.setChecked(true);
+                    updateMealChipAppearance(clickedChip, true);
+                }
+                
+                // Update time slots based on new selection
+                updateTimeSlots();
+            });
+            
+            // Set initial appearance
+            updateMealChipAppearance(chip, false);
+        }
+    }
+    
+    private void setupTimeSlotChips() {
+        // Time slots will be set up dynamically in updateTimeSlots()
+    }
+    
+    private void updateMealChipAppearance(Chip chip, boolean isSelected) {
+        android.util.Log.d("ChipColor", "Updating meal chip: " + chip.getText() + ", selected: " + isSelected);
+        if (isSelected) {
+            // Set green background for selected state
+            chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                android.graphics.Color.parseColor("#4CAF50")));
+            chip.setTextColor(android.graphics.Color.parseColor("#FFFFFF"));
+            chip.setChipStrokeWidth(0);
+            android.util.Log.d("ChipColor", "Set green color for: " + chip.getText());
+        } else {
+            // Set light gray background for unselected state
+            chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                android.graphics.Color.parseColor("#F1F5F9")));
+            chip.setTextColor(android.graphics.Color.parseColor("#64748B"));
+            chip.setChipStrokeWidth(0);
+            android.util.Log.d("ChipColor", "Set gray color for: " + chip.getText());
+        }
+    }
+    
+    private void updateTimeSlotChipAppearance(Chip chip, boolean isSelected) {
+        if (isSelected) {
+            // Set green background for selected state
+            chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                android.graphics.Color.parseColor("#4CAF50")));
+            chip.setTextColor(android.graphics.Color.parseColor("#FFFFFF"));
+            chip.setChipStrokeWidth(0);
+        } else {
+            // Set light gray background for unselected state
+            chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                android.graphics.Color.parseColor("#F1F5F9")));
+            chip.setTextColor(android.graphics.Color.parseColor("#64748B"));
+            chip.setChipStrokeWidth(0);
         }
     }
 }

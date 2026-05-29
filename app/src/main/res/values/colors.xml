@@ -65,4 +65,8 @@
     <color name="chip_checked_bg">#432C7A</color>
     <color name="chip_unchecked_text">#64748B</color>
     <color name="chip_checked_text">#FFFFFF</color>
+    
+    <!-- ── Green chip selector states for meal confirmation ── -->
+    <color name="chip_green_selected">#4CAF50</color>
+    <color name="chip_green_selected_text">#FFFFFF</color>
 </resources>
