@@ -312,6 +312,19 @@
                         android:paddingHorizontal="32dp" />
                 </LinearLayout>
 
+                <!-- Retry button — shown only when load fails -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRetryAttendance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="16dp"
+                    android:text="Try Again"
+                    android:textAllCaps="false"
+                    android:visibility="gone"
+                    app:cornerRadius="8dp"
+                    android:backgroundTint="#1E3A8A" />
+
             </LinearLayout>
 
         </LinearLayout>
