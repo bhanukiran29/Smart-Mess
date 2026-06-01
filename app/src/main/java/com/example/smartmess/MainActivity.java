@@ -104,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
         checkNotificationPermission();
         scheduleMealReminder();
         runEntryAnimations();
+        applyDeadlineState();
 
         btnSubmitConfirmation.setOnClickListener(v -> submitMealConfirmation());
         btnSubmitRating.setOnClickListener(v -> submitMealRating());
@@ -453,12 +454,106 @@ public class MainActivity extends AppCompatActivity {
         loadExistingSelections();
     }
 
+    // -----------------------------------------------------------------------
+    // Deadline helpers
+    // Confirmation deadline: 10:00 PM (22:00) every day.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns true if the current device time is at or after 10:00 PM.
+     * All confirmation writes must be gated behind this check.
+     */
+    private boolean isAfterDeadline() {
+        Calendar now = Calendar.getInstance();
+        int hour = now.get(Calendar.HOUR_OF_DAY);
+        boolean past = hour >= 22;
+        android.util.Log.d("DEADLINE",
+                "isAfterDeadline check — current hour=" + hour
+                + ", past deadline=" + past);
+        return past;
+    }
+
+    /**
+     * Applies the visual deadline state to the confirmation card.
+     * Called on onCreate and onResume so the UI always reflects the
+     * current time without requiring a restart.
+     *
+     * After 10 PM:
+     *   - All meal chips are disabled (non-clickable, gray)
+     *   - Save Confirmation button is disabled and gray
+     *   - tvConfirmationStatus banner is shown with the deadline message
+     *
+     * Before 10 PM:
+     *   - Everything is enabled
+     *   - tvConfirmationStatus is hidden
+     */
+    private void applyDeadlineState() {
+        boolean locked = isAfterDeadline();
+        android.util.Log.d("DEADLINE", "applyDeadlineState — locked=" + locked);
+
+        // ── Status banner ──
+        if (tvConfirmationStatus != null) {
+            if (locked) {
+                tvConfirmationStatus.setText(
+                        "🔒  Meal confirmation closes daily at 10:00 PM.");
+                tvConfirmationStatus.setVisibility(View.VISIBLE);
+            } else {
+                tvConfirmationStatus.setVisibility(View.GONE);
+            }
+        }
+
+        // ── Save Confirmation button ──
+        if (btnSubmitConfirmation != null
+                && btnSubmitConfirmation.getVisibility() != View.GONE) {
+            btnSubmitConfirmation.setEnabled(!locked);
+            btnSubmitConfirmation.setAlpha(locked ? 0.45f : 1f);
+            btnSubmitConfirmation.setBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(
+                            locked
+                            ? android.graphics.Color.parseColor("#94A3B8")
+                            : android.graphics.Color.parseColor("#1E3A8A")));
+            if (locked) {
+                btnSubmitConfirmation.setText("Confirmation Closed");
+            } else {
+                btnSubmitConfirmation.setText("Save Confirmation");
+            }
+        }
+
+        // ── Meal-type chips ──
+        int[] chipIds = {R.id.chipBreakfast, R.id.chipLunch,
+                         R.id.chipSnacks,    R.id.chipDinner};
+        for (int id : chipIds) {
+            Chip chip = findViewById(id);
+            if (chip != null) {
+                chip.setEnabled(!locked);
+                chip.setAlpha(locked ? 0.45f : 1f);
+                if (locked) {
+                    chip.setChipBackgroundColor(
+                            android.content.res.ColorStateList.valueOf(
+                                    android.graphics.Color.parseColor("#E2E8F0")));
+                    chip.setTextColor(android.graphics.Color.parseColor("#94A3B8"));
+                }
+            }
+        }
+
+        // ── Time-slot chips (dynamically added) ──
+        if (cgTimeSlot != null) {
+            for (int i = 0; i < cgTimeSlot.getChildCount(); i++) {
+                View child = cgTimeSlot.getChildAt(i);
+                if (child instanceof Chip) {
+                    child.setEnabled(!locked);
+                    child.setAlpha(locked ? 0.45f : 1f);
+                }
+            }
+        }
+    }
+
     private void submitMealConfirmation() {
         // ---- 10 PM Deadline Enforcement ----
-        Calendar now = Calendar.getInstance();
-        if (now.get(Calendar.HOUR_OF_DAY) >= 22) {
+        if (isAfterDeadline()) {
+            android.util.Log.d("DEADLINE", "submitMealConfirmation blocked — past 10 PM deadline");
             Toast.makeText(this,
-                    "⏰ Deadline Passed! Meal confirmations lock at 10:00 PM.",
+                    "Meal confirmation is closed. Please confirm before 10:00 PM.",
                     Toast.LENGTH_LONG).show();
             return;
         }
@@ -916,6 +1011,21 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void autoSaveMealSelection(String mealType, String timeSlot) {
+        // ---- Deadline guard — block ALL writes after 10 PM ----
+        if (isAfterDeadline()) {
+            android.util.Log.d("DEADLINE",
+                    "autoSaveMealSelection BLOCKED for " + mealType
+                    + " at " + timeSlot + " — past 10 PM deadline");
+            Toast.makeText(this,
+                    "Meal confirmation is closed. Please confirm before 10:00 PM.",
+                    Toast.LENGTH_LONG).show();
+            // Roll back local state so the UI stays consistent
+            selectedTimeSlotsByMeal.remove(mealType);
+            selectedMealStatus.remove(mealType);
+            updateTimeSlots();
+            return;
+        }
+
         String userId = mAuth.getCurrentUser().getUid();
         
         // Validate selection before saving
@@ -1051,6 +1161,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void autoSaveSkippingSelection(String mealType) {
+        // ---- Deadline guard — block ALL writes after 10 PM ----
+        if (isAfterDeadline()) {
+            android.util.Log.d("DEADLINE",
+                    "autoSaveSkippingSelection BLOCKED for " + mealType
+                    + " — past 10 PM deadline");
+            Toast.makeText(this,
+                    "Meal confirmation is closed. Please confirm before 10:00 PM.",
+                    Toast.LENGTH_LONG).show();
+            // Roll back local state
+            selectedMealStatus.remove(mealType);
+            updateTimeSlots();
+            return;
+        }
+
         String userId = mAuth.getCurrentUser().getUid();
         
         // Show loading indicator
@@ -1139,6 +1263,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showMealStatusDialog(String mealType) {
+        // ---- Deadline guard — don't even open the dialog after 10 PM ----
+        if (isAfterDeadline()) {
+            android.util.Log.d("DEADLINE",
+                    "showMealStatusDialog BLOCKED for " + mealType
+                    + " — past 10 PM deadline");
+            // Deselect the chip that was just tapped
+            selectedMeals.remove(mealType);
+            updateMealChipById(getMealChipId(mealType), mealType);
+            updateTimeSlots();
+            Toast.makeText(this,
+                    "Meal confirmation is closed. Please confirm before 10:00 PM.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
         // Create a simple dialog with Eating/Skipping options
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setTitle("Choose " + mealType + " Status");
@@ -1306,5 +1445,17 @@ public class MainActivity extends AppCompatActivity {
             chip.setChecked(isSelected);
             updateMealChipAppearance(chip, isSelected);
         }
+    }
+
+    /**
+     * Re-evaluate the deadline every time the screen comes back into view.
+     * This handles the case where the user leaves the app before 10 PM and
+     * returns after 10 PM — the UI will lock without requiring a restart.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        applyDeadlineState();
+        android.util.Log.d("DEADLINE", "onResume — deadline state re-applied");
     }
 }
