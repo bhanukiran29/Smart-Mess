@@ -25,6 +25,7 @@ import com.example.smartmess.repository.MealHistoryRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     // Track selected meals and time slots for multi-selection
     private Set<String> selectedMeals = new HashSet<>();
     private Map<String, String> selectedTimeSlotsByMeal = new HashMap<>(); // meal -> selected time slot
+    private Map<String, String> selectedMealStatus = new HashMap<>(); // meal -> "eat" or "skip"
     private RatingBar ratingBarMeal;
     private MaterialButton btnSubmitConfirmation, btnScanQR;
     private TextView btnSubmitRating;
@@ -392,6 +394,11 @@ public class MainActivity extends AppCompatActivity {
         btnScanQR = findViewById(R.id.btnScanQR);
         btnSubmitRating = findViewById(R.id.btnSubmitRating);
         
+        // Hide submit button since we use auto-save
+        if (btnSubmitConfirmation != null) {
+            btnSubmitConfirmation.setVisibility(View.GONE);
+        }
+        
         btnNavHome = findViewById(R.id.btnNavHome);
         btnNavHistory = findViewById(R.id.btnNavHistory);
         btnNavWallet = findViewById(R.id.btnNavWallet);
@@ -441,6 +448,9 @@ public class MainActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
         currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(tomorrow);
         tvDate.setText("Confirming meals for: " + sdf.format(tomorrow));
+        
+        // Load existing selections after setting the date
+        loadExistingSelections();
     }
 
     private void submitMealConfirmation() {
@@ -586,12 +596,38 @@ public class MainActivity extends AppCompatActivity {
     private void updateTimeSlots() {
         cgTimeSlot.removeAllViews();
         
-        // Only show time slots if meals are selected
-        if (selectedMeals.isEmpty()) {
-            // Show helper text when no meals are selected
+        // Only show time slots for meals that are marked as "eating"
+        Set<String> eatingMeals = new HashSet<>();
+        for (String mealType : selectedMeals) {
+            String status = selectedMealStatus.get(mealType);
+            if ("eat".equals(status)) {
+                eatingMeals.add(mealType);
+            }
+        }
+        
+        if (eatingMeals.isEmpty()) {
+            // Show helper text when no eating meals are selected
             TextView helperText = new TextView(MainActivity.this);
-            helperText.setText("Select meals above to see available time slots");
-            helperText.setTextColor(android.graphics.Color.parseColor("#94A3B8"));
+            if (selectedMeals.isEmpty()) {
+                helperText.setText("Select meals above to choose eating or skipping");
+            } else {
+                // Check if all selected meals are set to skipping
+                boolean allSkipping = true;
+                for (String mealType : selectedMeals) {
+                    String status = selectedMealStatus.get(mealType);
+                    if (!"skip".equals(status)) {
+                        allSkipping = false;
+                        break;
+                    }
+                }
+                if (allSkipping) {
+                    helperText.setText("All selected meals are marked for skipping");
+                    helperText.setTextColor(android.graphics.Color.parseColor("#EF4444"));
+                } else {
+                    helperText.setText("Select meals and choose 'Eating' to see time slots");
+                    helperText.setTextColor(android.graphics.Color.parseColor("#94A3B8"));
+                }
+            }
             helperText.setTextSize(14);
             helperText.setPadding(16, 24, 16, 24);
             helperText.setGravity(android.view.Gravity.CENTER);
@@ -599,29 +635,30 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         
-        // Group time slots by meal type for better organization
+        // Show time slots for each eating meal individually
         boolean isFirstMeal = true;
-        for (String mealType : selectedMeals) {
+        for (String mealType : eatingMeals) {
             String[] slots = getTimeSlotsForMeal(mealType);
             
             // Add spacing between meal groups (except for first)
             if (!isFirstMeal) {
                 View spacer = new View(MainActivity.this);
                 spacer.setLayoutParams(new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, 16));
+                    LinearLayout.LayoutParams.MATCH_PARENT, 24));
                 cgTimeSlot.addView(spacer);
             }
             
-            // Add meal label with better styling
+            // Add meal label with emoji and status
             TextView mealLabel = new TextView(MainActivity.this);
-            mealLabel.setText(mealType + " Time Slots");
+            String emoji = getMealEmoji(mealType);
+            mealLabel.setText(emoji + " " + mealType + " Time Slots");
             mealLabel.setTextColor(android.graphics.Color.parseColor("#0F172A"));
-            mealLabel.setTextSize(13);
+            mealLabel.setTextSize(15);
             mealLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-            mealLabel.setPadding(4, 8, 4, 8);
+            mealLabel.setPadding(8, 12, 8, 8);
             cgTimeSlot.addView(mealLabel);
             
-            // Add time slot chips for this meal
+            // Add time slot chips for this specific meal only
             for (String slot : slots) {
                 Chip chip = new Chip(MainActivity.this);
                 chip.setText(slot);
@@ -629,26 +666,41 @@ public class MainActivity extends AppCompatActivity {
                 chip.setTag(mealType); // Tag chip with meal type
                 
                 // Improve chip styling
-                chip.setChipCornerRadius(20);
-                chip.setChipMinHeight(40);
-                chip.setPadding(12, 8, 12, 8);
+                chip.setChipCornerRadius(24);
+                chip.setChipMinHeight(48);
+                chip.setPadding(16, 12, 16, 12);
+                chip.setTextSize(14);
                 
                 // Check if this slot is already selected for this meal
                 String selectedSlot = selectedTimeSlotsByMeal.get(mealType);
                 boolean isSelected = slot.equals(selectedSlot);
                 chip.setChecked(isSelected);
-                updateTimeSlotChipAppearance(chip, isSelected);
                 
-                // Disable other slots if one is already selected for this meal
-                if (selectedSlot != null && !isSelected) {
-                    chip.setEnabled(false);
-                    chip.setAlpha(0.5f); // Make disabled chips semi-transparent
-                } else {
+                // Apply green color for selected time slots
+                if (isSelected) {
+                    chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#4CAF50")));
+                    chip.setTextColor(android.graphics.Color.WHITE);
                     chip.setEnabled(true);
                     chip.setAlpha(1.0f);
+                } else {
+                    // Disable other slots if one is already selected for this meal
+                    if (selectedSlot != null) {
+                        chip.setEnabled(false);
+                        chip.setAlpha(0.5f);
+                        chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                            android.graphics.Color.parseColor("#F1F5F9")));
+                        chip.setTextColor(android.graphics.Color.parseColor("#94A3B8"));
+                    } else {
+                        chip.setEnabled(true);
+                        chip.setAlpha(1.0f);
+                        chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                            android.graphics.Color.parseColor("#F8FAFC")));
+                        chip.setTextColor(android.graphics.Color.parseColor("#1E293B"));
+                    }
                 }
                 
-                // Set up click listener with meal-specific logic
+                // Set up click listener for time slot selection
                 chip.setOnClickListener(v -> {
                     Chip clickedChip = (Chip) v;
                     String chipMealType = (String) clickedChip.getTag();
@@ -663,27 +715,21 @@ public class MainActivity extends AppCompatActivity {
                     String currentSelectedSlot = selectedTimeSlotsByMeal.get(chipMealType);
                     
                     if (slotText.equals(currentSelectedSlot)) {
-                        // Deselect current slot and re-enable all slots for this meal
+                        // Deselect current slot
                         selectedTimeSlotsByMeal.remove(chipMealType);
-                        
-                        // Re-enable all chips for this meal
-                        for (int i = 0; i < cgTimeSlot.getChildCount(); i++) {
-                            View child = cgTimeSlot.getChildAt(i);
-                            if (child instanceof Chip) {
-                                Chip otherChip = (Chip) child;
-                                String otherChipMealType = (String) otherChip.getTag();
-                                if (chipMealType.equals(otherChipMealType)) {
-                                    otherChip.setEnabled(true);
-                                    otherChip.setAlpha(1.0f);
-                                    otherChip.setChecked(false);
-                                    updateTimeSlotChipAppearance(otherChip, false);
-                                }
-                            }
-                        }
+                        autoRemoveMealSelection(chipMealType);
+                        updateTimeSlots(); // Refresh to re-enable all slots
                     } else {
-                        // Select new slot and disable others for this meal
+                        // Select new slot
+                        String existingSlot = selectedTimeSlotsByMeal.get(chipMealType);
+                        if (existingSlot != null && !existingSlot.equals(slotText)) {
+                            // Remove existing selection first
+                            autoRemoveMealSelection(chipMealType);
+                        }
+                        
                         selectedTimeSlotsByMeal.put(chipMealType, slotText);
-                        updateTimeSlotChipsForMeal(chipMealType);
+                        autoSaveMealSelection(chipMealType, slotText);
+                        updateTimeSlots(); // Refresh to show selection and disable others
                     }
                 });
                 
@@ -744,6 +790,16 @@ public class MainActivity extends AppCompatActivity {
         setupMealChip(R.id.chipLunch, "Lunch");
         setupMealChip(R.id.chipSnacks, "Snacks");
         setupMealChip(R.id.chipDinner, "Dinner");
+        
+        // Hide the old status chips since we use individual dialogs now
+        hideStatusChips();
+    }
+
+    private void hideStatusChips() {
+        ChipGroup cgStatus = findViewById(R.id.cgStatus);
+        if (cgStatus != null) {
+            cgStatus.setVisibility(View.GONE);
+        }
     }
     
     private void setupMealChip(int chipId, String mealType) {
@@ -757,17 +813,32 @@ public class MainActivity extends AppCompatActivity {
                 Chip clickedChip = (Chip) v;
                 
                 if (selectedMeals.contains(mealType)) {
-                    // Deselect meal and clear its time slot
+                    // Deselect meal and clear its time slot and status
                     selectedMeals.remove(mealType);
-                    selectedTimeSlotsByMeal.remove(mealType);
+                    String removedTimeSlot = selectedTimeSlotsByMeal.remove(mealType);
+                    String removedStatus = selectedMealStatus.remove(mealType);
                     clickedChip.setChecked(false);
                     updateMealChipAppearance(clickedChip, false);
+                    
+                    // Only auto-remove from database if there was actually a selection
+                    if (removedTimeSlot != null || removedStatus != null) {
+                        autoRemoveMealSelection(mealType);
+                    } else {
+                        // Show feedback for deselection without database operation
+                        Toast.makeText(MainActivity.this, mealType + " deselected", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
-                    // Select meal
+                    // Select meal and show status selection dialog
                     selectedMeals.add(mealType);
                     clickedChip.setChecked(true);
                     updateMealChipAppearance(clickedChip, true);
+                    
+                    // Show status selection for this specific meal
+                    showMealStatusDialog(mealType);
                 }
+                
+                // Debug logging
+                android.util.Log.d("MealSelection", "Selected meals: " + selectedMeals.toString());
                 
                 // Update time slots based on new selection
                 updateTimeSlots();
@@ -781,6 +852,8 @@ public class MainActivity extends AppCompatActivity {
     private void setupTimeSlotChips() {
         // Time slots will be set up dynamically in updateTimeSlots()
     }
+
+
     
     private void updateMealChipAppearance(Chip chip, boolean isSelected) {
         android.util.Log.d("ChipColor", "Updating meal chip: " + chip.getText() + ", selected: " + isSelected);
@@ -829,6 +902,409 @@ public class MainActivity extends AppCompatActivity {
                 chip.setTextColor(android.graphics.Color.parseColor("#94A3B8"));
             }
             chip.setChipStrokeWidth(0);
+        }
+    }
+    
+    private String getMealEmoji(String mealType) {
+        switch (mealType.toLowerCase()) {
+            case "breakfast": return "🍳";
+            case "lunch": return "🍱";
+            case "snacks": return "🥪";
+            case "dinner": return "🍛";
+            default: return "🍽️";
+        }
+    }
+    
+    private void autoSaveMealSelection(String mealType, String timeSlot) {
+        String userId = mAuth.getCurrentUser().getUid();
+        
+        // Validate selection before saving
+        if (!validateMealSelection(mealType, timeSlot)) {
+            Toast.makeText(this, "⚠️ Cannot select " + mealType + " in multiple time slots", Toast.LENGTH_LONG).show();
+            return;
+        }
+        
+        // Set meal status to eating when time slot is selected
+        selectedMealStatus.put(mealType, "eat");
+        
+        // Show loading indicator
+        Toast.makeText(this, "Saving " + mealType + " preference...", Toast.LENGTH_SHORT).show();
+        
+        // Save to database immediately
+        mealHistoryRepository.saveConfirmation(
+                userId, currentDate, mealType.toLowerCase(), "eat", timeSlot,
+                new MealHistoryRepository.SaveCallback() {
+                    @Override
+                    public void onSuccess(ConfirmationRecord saved) {
+                        // Show green success message for eating with snackbar
+                        String message = "✅ " + mealType + " preference saved successfully.";
+                        showSnackbarMessage(message, true);
+                        
+                        // Log for debugging
+                        android.util.Log.d("AutoSave", "Successfully saved: " + mealType + " at " + timeSlot);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        // Show error message with retry option
+                        String errorMessage = "❌ Failed to save " + mealType + " preference. Retrying...";
+                        Toast.makeText(MainActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                        
+                        // Log error for debugging
+                        android.util.Log.e("AutoSave", "Failed to save " + mealType + ": " + e.getMessage());
+                        
+                        // Remove from local selection since save failed
+                        selectedTimeSlotsByMeal.remove(mealType);
+                        selectedMealStatus.remove(mealType);
+                        updateTimeSlots();
+                        
+                        // Offer retry mechanism
+                        retryMealSave(mealType, timeSlot, 1);
+                    }
+                }
+        );
+    }
+    
+    private void autoRemoveMealSelection(String mealType) {
+        String userId = mAuth.getCurrentUser().getUid();
+        
+        // Show loading indicator
+        Toast.makeText(this, "Removing " + mealType + " preference...", Toast.LENGTH_SHORT).show();
+        
+        // Remove from database
+        db.collection("user_confirmations")
+                .document(userId)
+                .collection("records")
+                .document(currentDate + "_" + mealType.toLowerCase())
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    String message = "✅ " + mealType + " preference removed successfully!";
+                    Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                    android.util.Log.d("AutoSave", "Successfully removed: " + mealType);
+                })
+                .addOnFailureListener(e -> {
+                    String errorMessage = "❌ Failed to remove " + mealType + " preference.";
+                    Toast.makeText(MainActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                    android.util.Log.e("AutoSave", "Failed to remove " + mealType + ": " + e.getMessage());
+                });
+    }
+
+    private void retryMealSave(String mealType, String timeSlot, int attemptNumber) {
+        if (attemptNumber > 3) {
+            // Max retries reached
+            Toast.makeText(this, "❌ Unable to save " + mealType + " after multiple attempts. Please try again later.", 
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        
+        // Wait a bit before retrying (exponential backoff)
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            String userId = mAuth.getCurrentUser().getUid();
+            
+            Toast.makeText(this, "🔄 Retrying save for " + mealType + " (attempt " + attemptNumber + "/3)...", 
+                    Toast.LENGTH_SHORT).show();
+            
+            mealHistoryRepository.saveConfirmation(
+                    userId, currentDate, mealType.toLowerCase(), "eat", timeSlot,
+                    new MealHistoryRepository.SaveCallback() {
+                        @Override
+                        public void onSuccess(ConfirmationRecord saved) {
+                            String message = "✅ " + mealType + " preference saved successfully on retry!";
+                            Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+                            android.util.Log.d("AutoSave", "Successfully saved on retry " + attemptNumber + ": " + mealType);
+                            
+                            // Restore local selection since save succeeded
+                            selectedTimeSlotsByMeal.put(mealType, timeSlot);
+                            selectedMealStatus.put(mealType, "eat");
+                            updateTimeSlots();
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            android.util.Log.e("AutoSave", "Retry " + attemptNumber + " failed for " + mealType + ": " + e.getMessage());
+                            // Try again with next attempt number
+                            retryMealSave(mealType, timeSlot, attemptNumber + 1);
+                        }
+                    }
+            );
+        }, attemptNumber * 1000); // 1s, 2s, 3s delays
+    }
+
+    private boolean validateMealSelection(String mealType, String timeSlot) {
+        // Check if this meal already has a different time slot selected
+        String existingSlot = selectedTimeSlotsByMeal.get(mealType);
+        if (existingSlot != null && !existingSlot.equals(timeSlot)) {
+            android.util.Log.w("AutoSave", "Conflict detected: " + mealType + " already has slot " + existingSlot + 
+                    ", trying to set " + timeSlot);
+            return false;
+        }
+        
+        // Check if user is trying to select the same meal in multiple slots
+        for (Map.Entry<String, String> entry : selectedTimeSlotsByMeal.entrySet()) {
+            if (entry.getKey().equals(mealType) && !entry.getValue().equals(timeSlot)) {
+                android.util.Log.w("AutoSave", "Preventing duplicate meal selection: " + mealType);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    private void autoSaveSkippingSelection(String mealType) {
+        String userId = mAuth.getCurrentUser().getUid();
+        
+        // Show loading indicator
+        Toast.makeText(this, "Saving " + mealType + " skipping preference...", Toast.LENGTH_SHORT).show();
+        
+        // Save to database with "not_eat" status and "Skipping" time slot
+        mealHistoryRepository.saveConfirmation(
+                userId, currentDate, mealType.toLowerCase(), "not_eat", "Skipping",
+                new MealHistoryRepository.SaveCallback() {
+                    @Override
+                    public void onSuccess(ConfirmationRecord saved) {
+                        // Show red success message for skipping with snackbar
+                        String message = "❌ " + mealType + " marked as Skipped. Changes saved successfully.";
+                        showSnackbarMessage(message, false);
+                        
+                        // Log for debugging
+                        android.util.Log.d("AutoSave", "Successfully saved skipping: " + mealType);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        // Show error message with retry option
+                        String errorMessage = "❌ Failed to save " + mealType + " skipping preference. Retrying...";
+                        Toast.makeText(MainActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                        
+                        // Log error for debugging
+                        android.util.Log.e("AutoSave", "Failed to save skipping " + mealType + ": " + e.getMessage());
+                        
+                        // Remove from local selection since save failed
+                        selectedMealStatus.remove(mealType);
+                        
+                        // Offer retry mechanism
+                        retrySkippingSave(mealType, 1);
+                    }
+                }
+        );
+    }
+
+    private void retrySkippingSave(String mealType, int attemptNumber) {
+        if (attemptNumber > 3) {
+            // Max retries reached
+            Toast.makeText(this, "❌ Unable to save " + mealType + " skipping after multiple attempts. Please try again later.", 
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        
+        // Wait a bit before retrying (exponential backoff)
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            String userId = mAuth.getCurrentUser().getUid();
+            
+            Toast.makeText(this, "🔄 Retrying skipping save for " + mealType + " (attempt " + attemptNumber + "/3)...", 
+                    Toast.LENGTH_SHORT).show();
+            
+            mealHistoryRepository.saveConfirmation(
+                    userId, currentDate, mealType.toLowerCase(), "not_eat", "Skipping",
+                    new MealHistoryRepository.SaveCallback() {
+                        @Override
+                        public void onSuccess(ConfirmationRecord saved) {
+                            String message = "❌ " + mealType + " skipping preference saved successfully on retry!";
+                            Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+                            android.util.Log.d("AutoSave", "Successfully saved skipping on retry " + attemptNumber + ": " + mealType);
+                            
+                            // Restore local selection since save succeeded
+                            selectedMealStatus.put(mealType, "skip");
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            android.util.Log.e("AutoSave", "Skipping retry " + attemptNumber + " failed for " + mealType + ": " + e.getMessage());
+                            // Try again with next attempt number
+                            retrySkippingSave(mealType, attemptNumber + 1);
+                        }
+                    }
+            );
+        }, attemptNumber * 1000); // 1s, 2s, 3s delays
+    }
+
+
+
+    private void showStatusFeedback(String status) {
+        if ("eat".equals(status)) {
+            Toast.makeText(this, "✅ Selected meals marked for eating. Choose time slots below ⬇️", Toast.LENGTH_SHORT).show();
+        } else if ("skip".equals(status)) {
+            Toast.makeText(this, "❌ Selected meals marked for skipping. Preferences saved automatically.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void showMealStatusDialog(String mealType) {
+        // Create a simple dialog with Eating/Skipping options
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Choose " + mealType + " Status");
+        builder.setMessage("Will you be eating " + mealType.toLowerCase() + " tomorrow?");
+        
+        // Eating option (Green)
+        builder.setPositiveButton("🟢 Eating", (dialog, which) -> {
+            selectedMealStatus.put(mealType, "eat");
+            updateMealChipAppearance(mealType, "eat");
+            updateTimeSlots();
+            Toast.makeText(this, mealType + " marked for eating. Select time slot below ⬇️", Toast.LENGTH_SHORT).show();
+        });
+        
+        // Skipping option (Red)
+        builder.setNegativeButton("🔴 Skipping", (dialog, which) -> {
+            selectedMealStatus.put(mealType, "skip");
+            selectedTimeSlotsByMeal.remove(mealType); // Clear any time slot
+            updateMealChipAppearance(mealType, "skip");
+            updateTimeSlots();
+            autoSaveSkippingSelection(mealType);
+        });
+        
+        builder.setCancelable(true);
+        builder.setOnCancelListener(dialog -> {
+            // If user cancels, deselect the meal
+            selectedMeals.remove(mealType);
+            updateMealChipById(getMealChipId(mealType), mealType);
+            updateTimeSlots();
+        });
+        
+        builder.show();
+    }
+
+    private int getMealChipId(String mealType) {
+        switch (mealType) {
+            case "Breakfast": return R.id.chipBreakfast;
+            case "Lunch": return R.id.chipLunch;
+            case "Snacks": return R.id.chipSnacks;
+            case "Dinner": return R.id.chipDinner;
+            default: return -1;
+        }
+    }
+
+    private void updateMealChipAppearance(String mealType, String status) {
+        int chipId = getMealChipId(mealType);
+        if (chipId != -1) {
+            Chip chip = findViewById(chipId);
+            if (chip != null) {
+                chip.setChecked(true);
+                
+                if ("eat".equals(status)) {
+                    // Green for eating
+                    chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#4CAF50")));
+                    chip.setTextColor(android.graphics.Color.WHITE);
+                } else if ("skip".equals(status)) {
+                    // Red for skipping
+                    chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#EF4444")));
+                    chip.setTextColor(android.graphics.Color.WHITE);
+                }
+            }
+        }
+    }
+
+    private void showSnackbarMessage(String message, boolean isSuccess) {
+        View rootView = findViewById(android.R.id.content);
+        Snackbar snackbar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
+        
+        // Customize snackbar appearance
+        View snackbarView = snackbar.getView();
+        if (isSuccess) {
+            snackbarView.setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"));
+        } else {
+            snackbarView.setBackgroundColor(android.graphics.Color.parseColor("#EF4444"));
+        }
+        
+        TextView textView = snackbarView.findViewById(com.google.android.material.R.id.snackbar_text);
+        textView.setTextColor(android.graphics.Color.WHITE);
+        textView.setMaxLines(3);
+        
+        snackbar.show();
+    }
+    
+    private void loadExistingSelections() {
+        String userId = mAuth.getCurrentUser().getUid();
+        
+        // Show loading indicator
+        android.util.Log.d("AutoSave", "Loading existing selections for date: " + currentDate);
+        
+        // Load existing confirmations from database
+        db.collection("user_confirmations")
+                .document(userId)
+                .collection("records")
+                .whereEqualTo("date", currentDate)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        // Clear current selections
+                        selectedMeals.clear();
+                        selectedTimeSlotsByMeal.clear();
+                        selectedMealStatus.clear();
+                        
+                        int loadedCount = 0;
+                        
+                        // Load existing confirmations
+                        for (com.google.firebase.firestore.QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                            String mealType = document.getString("mealType");
+                            String status = document.getString("status");
+                            String timeSlot = document.getString("timeSlot");
+                            
+                            if (mealType != null && status != null) {
+                                String capitalizedMeal = capitalize(mealType);
+                                selectedMeals.add(capitalizedMeal);
+                                
+                                if ("eat".equals(status)) {
+                                    selectedMealStatus.put(capitalizedMeal, "eat");
+                                    if (timeSlot != null && !timeSlot.equals("Skipping")) {
+                                        selectedTimeSlotsByMeal.put(capitalizedMeal, timeSlot);
+                                    }
+                                } else if ("not_eat".equals(status)) {
+                                    selectedMealStatus.put(capitalizedMeal, "skip");
+                                    // Don't add time slot for skipped meals
+                                }
+                                
+                                loadedCount++;
+                                android.util.Log.d("AutoSave", "Loaded: " + capitalizedMeal + " -> " + status + " -> " + timeSlot);
+                            }
+                        }
+                        
+                        // Update UI to show existing selections
+                        updateMealChipsFromExistingData();
+                        updateTimeSlots();
+                        
+                        // Show restoration message
+                        if (loadedCount > 0) {
+                            String message = "📋 Restored " + loadedCount + " saved meal preference" + 
+                                    (loadedCount == 1 ? "" : "s");
+                            Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+                        }
+                    } else {
+                        android.util.Log.d("AutoSave", "No existing selections found for " + currentDate);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("AutoSave", "Failed to load existing selections: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "⚠️ Could not load saved preferences", Toast.LENGTH_SHORT).show();
+                });
+    }
+    
+    private void updateMealChipsFromExistingData() {
+        // Update each meal chip based on its individual status
+        for (String mealType : selectedMeals) {
+            String status = selectedMealStatus.get(mealType);
+            if (status != null) {
+                updateMealChipAppearance(mealType, status);
+            }
+        }
+    }
+    
+    private void updateMealChipById(int chipId, String mealType) {
+        Chip chip = findViewById(chipId);
+        if (chip != null) {
+            boolean isSelected = selectedMeals.contains(mealType);
+            chip.setChecked(isSelected);
+            updateMealChipAppearance(chip, isSelected);
         }
     }
 }
