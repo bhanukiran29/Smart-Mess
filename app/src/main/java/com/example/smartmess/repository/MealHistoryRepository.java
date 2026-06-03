@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.example.smartmess.models.AttendanceRecord;
 import com.example.smartmess.models.ConfirmationRecord;
+import com.example.smartmess.models.MealTimelineEntry;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -63,6 +64,11 @@ public class MealHistoryRepository {
 
     public interface AttendanceCallback {
         void onSuccess(List<AttendanceRecord> records);
+        void onFailure(Exception e);
+    }
+
+    public interface TimelineCallback {
+        void onSuccess(List<MealTimelineEntry> entries);
         void onFailure(Exception e);
     }
 
@@ -381,6 +387,191 @@ public class MealHistoryRepository {
         }
 
         return records;
+    }
+
+    // -----------------------------------------------------------------------
+    // Load Meal Timeline — unified History tab data
+    //
+    // Strategy:
+    //   1. Load ALL user confirmations (user_confirmations/{uid}/records)
+    //   2. Load ALL attendance records (collectionGroup scanLogs by userId)
+    //   3. Merge by date+meal key to derive per-meal status:
+    //
+    //      Confirmed (eat) + Scan found   → CONFIRMED_ATTENDED
+    //      Confirmed (eat) + No scan + past date → CONFIRMED_MISSED
+    //      Confirmed (not_eat)             → SKIPPED
+    //      Confirmed (eat) + future date   → UPCOMING (included in history)
+    //      Scan without any confirmation   → WALKIN
+    //
+    //   4. Sort by date DESC, then canonical meal order within same date.
+    //   5. Optional filter: 7 = last 7 days, 30 = last 30 days, 0 = all time
+    // -----------------------------------------------------------------------
+
+    /**
+     * @param filterDays 7 = last 7 days, 30 = last 30 days, 0 = all time
+     */
+    public void loadMealTimeline(String userId, int filterDays, TimelineCallback callback) {
+        long startMs = System.currentTimeMillis();
+        Log.d(TAG, "loadMealTimeline: uid=" + userId + " filterDays=" + filterDays);
+
+        final String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                .format(Calendar.getInstance().getTime());
+
+        final String cutoffDate;
+        if (filterDays > 0) {
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DAY_OF_YEAR, -filterDays);
+            cutoffDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    .format(cal.getTime());
+        } else {
+            cutoffDate = "";
+        }
+
+        db.collection("user_confirmations")
+                .document(userId)
+                .collection("records")
+                .get()
+                .addOnSuccessListener(confirmSnap -> {
+
+                    final Map<String, ConfirmationRecord> confirmMap = new HashMap<>();
+                    for (QueryDocumentSnapshot doc : confirmSnap) {
+                        String date     = doc.getString("date");
+                        String mealType = doc.getString("mealType");
+                        String status   = doc.getString("status");
+                        String timeSlot = doc.getString("timeSlot");
+                        long   tsMillis = extractTimestampMillis(doc.get("timestamp"));
+                        if (date == null || mealType == null) continue;
+                        if (!cutoffDate.isEmpty() && date.compareTo(cutoffDate) < 0) continue;
+
+                        ConfirmationRecord r = new ConfirmationRecord(
+                                date, mealType, status, timeSlot, tsMillis);
+                        r.setDocId(doc.getId());
+                        confirmMap.put(date + "_" + mealType, r);
+                    }
+
+                    Query attQuery = db.collectionGroup("scanLogs")
+                            .whereEqualTo("userId", userId)
+                            .orderBy("timestamp", Query.Direction.DESCENDING)
+                            .limit(200);
+
+                    attQuery.get()
+                            .addOnSuccessListener(scanSnap -> {
+
+                                final Map<String, Long> scanMap = new HashMap<>();
+                                for (QueryDocumentSnapshot doc : scanSnap) {
+                                    String meal = doc.getReference().getParent().getId();
+                                    String date = doc.getReference().getParent().getParent() != null
+                                            ? doc.getReference().getParent().getParent().getId()
+                                            : "";
+                                    if (date.isEmpty() || meal.isEmpty()) continue;
+                                    if (!cutoffDate.isEmpty() && date.compareTo(cutoffDate) < 0)
+                                        continue;
+
+                                    long tsMillis = extractTimestampMillis(doc.get("timestamp"));
+                                    String key = date + "_" + meal;
+                                    if (!scanMap.containsKey(key)
+                                            || scanMap.get(key) > tsMillis) {
+                                        scanMap.put(key, tsMillis);
+                                    }
+                                }
+
+                                List<MealTimelineEntry> timeline = new ArrayList<>();
+
+                                for (Map.Entry<String, ConfirmationRecord> e
+                                        : confirmMap.entrySet()) {
+                                    String key   = e.getKey();
+                                    ConfirmationRecord conf = e.getValue();
+                                    String date  = conf.getDate();
+                                    String meal  = conf.getMealType();
+                                    boolean isFuture = date.compareTo(today) > 0;
+                                    boolean isToday  = date.equals(today);
+                                    boolean isEat    = "eat".equals(conf.getStatus());
+                                    long scanTime    = scanMap.containsKey(key)
+                                            ? scanMap.get(key) : 0L;
+
+                                    int entryStatus;
+                                    if (!isEat) {
+                                        entryStatus = MealTimelineEntry.STATUS_SKIPPED;
+                                    } else if (isFuture) {
+                                        entryStatus = MealTimelineEntry.STATUS_UPCOMING;
+                                    } else if (scanTime > 0) {
+                                        entryStatus = MealTimelineEntry.STATUS_CONFIRMED_ATTENDED;
+                                    } else {
+                                        entryStatus = isToday
+                                                ? MealTimelineEntry.STATUS_UPCOMING
+                                                : MealTimelineEntry.STATUS_CONFIRMED_MISSED;
+                                    }
+
+                                    timeline.add(new MealTimelineEntry(
+                                            date, meal, entryStatus,
+                                            conf.getTimestamp(),
+                                            conf.getTimeSlot(),
+                                            scanTime));
+
+                                    scanMap.remove(key);
+                                }
+
+                                // Remaining scans are walk-ins
+                                for (Map.Entry<String, Long> e : scanMap.entrySet()) {
+                                    String[] parts = e.getKey().split("_", 2);
+                                    if (parts.length < 2) continue;
+                                    String date = parts[0];
+                                    String meal = parts[1];
+                                    timeline.add(new MealTimelineEntry(
+                                            date, meal,
+                                            MealTimelineEntry.STATUS_WALKIN,
+                                            e.getValue(), null, e.getValue()));
+                                }
+
+                                // Sort: newest date first, canonical meal order within day
+                                timeline.sort((a, b) -> {
+                                    int dateCmp = b.getDate().compareTo(a.getDate());
+                                    if (dateCmp != 0) return dateCmp;
+                                    return mealOrder(a.getMealType())
+                                            - mealOrder(b.getMealType());
+                                });
+
+                                Log.d(TAG, "Timeline built: " + timeline.size()
+                                        + " in " + (System.currentTimeMillis() - startMs) + "ms");
+                                callback.onSuccess(timeline);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "loadMealTimeline scanLogs FAILED: " + e.getMessage(), e);
+                                // Fallback: confirmations-only timeline
+                                List<MealTimelineEntry> fallback =
+                                        buildConfirmOnlyTimeline(confirmMap, today);
+                                callback.onSuccess(fallback);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "loadMealTimeline confirmations FAILED: " + e.getMessage(), e);
+                    callback.onFailure(e);
+                });
+    }
+
+    /** Fallback when scanLogs query fails — builds timeline from confirmations only. */
+    private List<MealTimelineEntry> buildConfirmOnlyTimeline(
+            Map<String, ConfirmationRecord> confirmMap, String today) {
+
+        List<MealTimelineEntry> list = new ArrayList<>();
+        for (ConfirmationRecord conf : confirmMap.values()) {
+            boolean isFuture = conf.getDate().compareTo(today) > 0;
+            boolean isEat    = "eat".equals(conf.getStatus());
+            int entryStatus;
+            if (!isEat)        entryStatus = MealTimelineEntry.STATUS_SKIPPED;
+            else if (isFuture) entryStatus = MealTimelineEntry.STATUS_UPCOMING;
+            else               entryStatus = MealTimelineEntry.STATUS_CONFIRMED_MISSED;
+
+            list.add(new MealTimelineEntry(
+                    conf.getDate(), conf.getMealType(), entryStatus,
+                    conf.getTimestamp(), conf.getTimeSlot(), 0L));
+        }
+        list.sort((a, b) -> {
+            int dateCmp = b.getDate().compareTo(a.getDate());
+            if (dateCmp != 0) return dateCmp;
+            return mealOrder(a.getMealType()) - mealOrder(b.getMealType());
+        });
+        return list;
     }
 
     // -----------------------------------------------------------------------
