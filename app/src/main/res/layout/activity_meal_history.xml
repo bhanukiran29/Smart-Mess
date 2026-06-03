@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    activity_meal_history.xml
-    Two-tab layout:
-      Tab 0 — Upcoming Confirmations
-      Tab 1 — Attendance History
+    activity_meal_history.xml — Redesigned Meal History Dashboard
+    Three-tab layout:
+      Tab 0 — Upcoming  (future confirmations)
+      Tab 1 — History   (unified meal timeline)
+      Tab 2 — Attendance (QR scan records only)
 -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -31,7 +32,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:padding="12dp"
-                android:src="@android:drawable/ic_menu_revert"
+                android:src="@drawable/ic_arrow_back"
                 app:tint="#FFFFFF"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -58,97 +59,155 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Confirmations &amp; attendance"
+                    android:text="Your complete meal activity"
                     android:textColor="#CBD5E1"
                     android:textSize="12sp"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Stats row -->
-        <LinearLayout
-            android:id="@+id/llStatsRow"
+        <!-- ===== Stats row — 5 cards ===== -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
+            android:scrollbars="none"
+            android:paddingHorizontal="12dp"
             android:paddingBottom="12dp"
-            android:weightSum="3">
+            android:fillViewport="false">
 
-            <!-- Upcoming card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="6dp"
-                app:cardCornerRadius="10dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="#1AFFFFFF"
-                app:strokeWidth="0dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="10dp"
-                    android:gravity="center">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Upcoming" android:textSize="10sp" android:textColor="#CBD5E1"/>
-                    <TextView android:id="@+id/tvCountUpcoming"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="0" android:textSize="22sp" android:textColor="#FFFFFF" android:textStyle="bold"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                android:orientation="horizontal">
 
-            <!-- Eaten card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="6dp"
-                app:cardCornerRadius="10dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="#1AFFFFFF"
-                app:strokeWidth="0dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Confirmed -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="80dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="10dp"
-                    android:gravity="center">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Attended" android:textSize="10sp" android:textColor="#CBD5E1"/>
-                    <TextView android:id="@+id/tvCountEaten"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="0" android:textSize="22sp" android:textColor="#FFFFFF" android:textStyle="bold"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1AFFFFFF"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp"
+                        android:gravity="center">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Confirmed" android:textSize="9sp" android:textColor="#CBD5E1"
+                            android:gravity="center"/>
+                        <TextView android:id="@+id/tvStatConfirmed"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0" android:textSize="20sp" android:textColor="#FFFFFF"
+                            android:textStyle="bold" android:gravity="center"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-            <!-- Walk-ins card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                app:cardCornerRadius="10dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="#1AFFFFFF"
-                app:strokeWidth="0dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Attended -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="80dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="10dp"
-                    android:gravity="center">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Walk-ins" android:textSize="10sp" android:textColor="#CBD5E1"/>
-                    <TextView android:id="@+id/tvCountWalkins"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="0" android:textSize="22sp" android:textColor="#FFFFFF" android:textStyle="bold"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1AFFFFFF"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp"
+                        android:gravity="center">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Attended" android:textSize="9sp" android:textColor="#CBD5E1"
+                            android:gravity="center"/>
+                        <TextView android:id="@+id/tvStatAttended"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0" android:textSize="20sp" android:textColor="#FFFFFF"
+                            android:textStyle="bold" android:gravity="center"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-        <!-- Tab bar -->
+                <!-- Skipped -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1AFFFFFF"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp"
+                        android:gravity="center">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Skipped" android:textSize="9sp" android:textColor="#CBD5E1"
+                            android:gravity="center"/>
+                        <TextView android:id="@+id/tvStatSkipped"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0" android:textSize="20sp" android:textColor="#FFFFFF"
+                            android:textStyle="bold" android:gravity="center"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Walk-ins -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1AFFFFFF"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp"
+                        android:gravity="center">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Walk-ins" android:textSize="9sp" android:textColor="#CBD5E1"
+                            android:gravity="center"/>
+                        <TextView android:id="@+id/tvStatWalkins"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0" android:textSize="20sp" android:textColor="#FFFFFF"
+                            android:textStyle="bold" android:gravity="center"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Missed -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1AFFFFFF"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp"
+                        android:gravity="center">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Missed" android:textSize="9sp" android:textColor="#CBD5E1"
+                            android:gravity="center"/>
+                        <TextView android:id="@+id/tvStatMissed"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0" android:textSize="20sp" android:textColor="#FFFFFF"
+                            android:textStyle="bold" android:gravity="center"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- Tab bar — 3 tabs -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayout"
             android:layout_width="match_parent"
@@ -159,12 +218,19 @@
             app:tabIndicatorColor="#FFFFFF"
             app:tabIndicatorHeight="3dp"
             app:tabRippleColor="@android:color/transparent"
-            app:tabTextAppearance="@android:style/TextAppearance.Widget.TabWidget">
+            app:tabTextAppearance="@android:style/TextAppearance.Widget.TabWidget"
+            app:tabMode="fixed"
+            app:tabGravity="fill">
 
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Upcoming" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="History" />
 
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
@@ -187,7 +253,7 @@
             android:paddingTop="16dp"
             android:paddingBottom="32dp">
 
-            <!-- ===== TAB 0: UPCOMING CONFIRMATIONS ===== -->
+            <!-- ===== TAB 0: UPCOMING ===== -->
             <LinearLayout
                 android:id="@+id/layoutUpcoming"
                 android:layout_width="match_parent"
@@ -198,14 +264,13 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Upcoming Confirmations"
+                    android:text="Upcoming Meal Confirmations"
                     android:textColor="#0F172A"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:layout_marginHorizontal="16dp"
                     android:layout_marginBottom="12dp" />
 
-                <!-- Upcoming RecyclerView -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvUpcoming"
                     android:layout_width="match_parent"
@@ -213,44 +278,127 @@
                     android:nestedScrollingEnabled="false"
                     android:clipToPadding="false" />
 
-                <!-- Empty state for upcoming -->
                 <LinearLayout
                     android:id="@+id/llEmptyUpcoming"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
+                    android:layout_height="220dp"
                     android:orientation="vertical"
                     android:gravity="center"
                     android:visibility="gone">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="📅"
-                        android:textSize="48sp"
-                        android:gravity="center"
-                        android:layout_marginBottom="12dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="No upcoming meal confirmations."
-                        android:textColor="#64748B"
-                        android:textSize="14sp"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="📅" android:textSize="48sp" android:gravity="center"
+                        android:layout_marginBottom="12dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="No upcoming confirmations" android:textColor="#64748B"
+                        android:textSize="14sp" android:gravity="center"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="Go to Home to confirm tomorrow's meals."
-                        android:textColor="#94A3B8"
-                        android:textSize="12sp"
-                        android:gravity="center"
-                        android:layout_marginTop="4dp" />
+                        android:textColor="#94A3B8" android:textSize="12sp"
+                        android:gravity="center" android:layout_marginTop="4dp"/>
                 </LinearLayout>
+            </LinearLayout>
+
+            <!-- ===== TAB 1: HISTORY (unified timeline) ===== -->
+            <LinearLayout
+                android:id="@+id/layoutHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Filter chips row -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="12dp"
+                    android:fillViewport="false">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/chipFilter7"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="Last 7 Days"
+                            android:textSize="12sp"
+                            android:textColor="#64748B"
+                            android:background="@drawable/bg_filter_chip"
+                            android:paddingHorizontal="14dp"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:id="@+id/chipFilter30"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="Last 30 Days"
+                            android:textSize="12sp"
+                            android:textColor="#64748B"
+                            android:background="@drawable/bg_filter_chip"
+                            android:paddingHorizontal="14dp"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:id="@+id/chipFilterAll"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="All Time"
+                            android:textSize="12sp"
+                            android:textColor="#64748B"
+                            android:background="@drawable/bg_filter_chip"
+                            android:paddingHorizontal="14dp" />
+
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:clipToPadding="false" />
+
+                <LinearLayout
+                    android:id="@+id/llEmptyHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:visibility="gone">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="🍽️" android:textSize="48sp" android:gravity="center"
+                        android:layout_marginBottom="12dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="No meal records found" android:textColor="#64748B"
+                        android:textSize="14sp" android:gravity="center"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Your meal activity will appear here."
+                        android:textColor="#94A3B8" android:textSize="12sp"
+                        android:gravity="center" android:layout_marginTop="4dp"/>
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRetryHistory"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="16dp"
+                    android:text="Try Again"
+                    android:textAllCaps="false"
+                    android:visibility="gone"
+                    app:cornerRadius="8dp"
+                    android:backgroundTint="#1E3A8A" />
 
             </LinearLayout>
 
-            <!-- ===== TAB 1: ATTENDANCE HISTORY ===== -->
+            <!-- ===== TAB 2: ATTENDANCE (QR scan records) ===== -->
             <LinearLayout
                 android:id="@+id/layoutAttendance"
                 android:layout_width="match_parent"
@@ -261,14 +409,13 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Attendance History"
+                    android:text="QR Attendance Records"
                     android:textColor="#0F172A"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:layout_marginHorizontal="16dp"
                     android:layout_marginBottom="12dp" />
 
-                <!-- Attendance RecyclerView -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvAttendance"
                     android:layout_width="match_parent"
@@ -276,43 +423,26 @@
                     android:nestedScrollingEnabled="false"
                     android:clipToPadding="false" />
 
-                <!-- Empty state for attendance -->
                 <LinearLayout
                     android:id="@+id/llEmptyAttendance"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
+                    android:layout_height="220dp"
                     android:orientation="vertical"
                     android:gravity="center"
                     android:visibility="gone">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🍽️"
-                        android:textSize="48sp"
-                        android:gravity="center"
-                        android:layout_marginBottom="12dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="No meal records found."
-                        android:textColor="#64748B"
-                        android:textSize="14sp"
-                        android:gravity="center" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="📷" android:textSize="48sp" android:gravity="center"
+                        android:layout_marginBottom="12dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="No attendance records found" android:textColor="#64748B"
+                        android:textSize="14sp" android:gravity="center"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="Scan the QR code at the mess entrance to record attendance."
-                        android:textColor="#94A3B8"
-                        android:textSize="12sp"
-                        android:gravity="center"
-                        android:layout_marginTop="4dp"
-                        android:paddingHorizontal="32dp" />
+                        android:textColor="#94A3B8" android:textSize="12sp"
+                        android:gravity="center" android:layout_marginTop="4dp"
+                        android:paddingHorizontal="32dp"/>
                 </LinearLayout>
 
-                <!-- Retry button — shown only when load fails -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRetryAttendance"
                     android:layout_width="wrap_content"
@@ -330,7 +460,7 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Loading spinner -->
+    <!-- Loading spinner — centred over content -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"

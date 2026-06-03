@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    item_attendance.xml
-    Row layout for a single QR attendance record in the Attendance tab.
-    Shows: Date, Meal, Scan Time, Pre-confirmed or Walk-in badge.
+    item_timeline_entry.xml
+    Row layout for a single entry in the History (unified timeline) tab.
+    Shows: Date, Meal Type, Status badge, and optional scan time sub-line.
 -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -22,40 +22,40 @@
         android:layout_height="wrap_content"
         android:padding="14dp">
 
-        <!-- Coloured status bar on the left -->
+        <!-- Dynamic colour bar on the left -->
         <View
-            android:id="@+id/viewAttendanceBar"
+            android:id="@+id/viewTimelineBar"
             android:layout_width="4dp"
             android:layout_height="0dp"
-            android:background="#3B82F6"
+            android:background="#22C55E"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
         <!-- Meal icon -->
         <TextView
-            android:id="@+id/tvAttMealIcon"
+            android:id="@+id/tvTimelineMealIcon"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:gravity="center"
             android:textSize="22sp"
-            android:text="🍽️"
-            app:layout_constraintStart_toEndOf="@id/viewAttendanceBar"
+            android:text="🍳"
+            app:layout_constraintStart_toEndOf="@id/viewTimelineBar"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             android:layout_marginStart="10dp" />
 
-        <!-- Day label -->
+        <!-- Date (bold) -->
         <TextView
-            android:id="@+id/tvAttDayLabel"
+            android:id="@+id/tvTimelineDate"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Mon, May 26"
+            android:text="Jun 02, 2026"
             android:textColor="#0F172A"
             android:textSize="13sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toEndOf="@id/tvAttMealIcon"
-            app:layout_constraintEnd_toStartOf="@id/tvAttBadge"
+            app:layout_constraintStart_toEndOf="@id/tvTimelineMealIcon"
+            app:layout_constraintEnd_toStartOf="@id/tvTimelineStatusBadge"
             app:layout_constraintTop_toTopOf="parent"
             android:layout_marginStart="10dp"
             android:layout_marginEnd="8dp"
@@ -63,47 +63,47 @@
 
         <!-- Meal type -->
         <TextView
-            android:id="@+id/tvAttMealType"
+            android:id="@+id/tvTimelineMealType"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Lunch"
+            android:text="Breakfast"
             android:textColor="#64748B"
             android:textSize="12sp"
-            app:layout_constraintStart_toEndOf="@id/tvAttMealIcon"
-            app:layout_constraintEnd_toStartOf="@id/tvAttBadge"
-            app:layout_constraintTop_toBottomOf="@id/tvAttDayLabel"
+            app:layout_constraintStart_toEndOf="@id/tvTimelineMealIcon"
+            app:layout_constraintEnd_toStartOf="@id/tvTimelineStatusBadge"
+            app:layout_constraintTop_toBottomOf="@id/tvTimelineDate"
             android:layout_marginStart="10dp"
             android:layout_marginEnd="8dp"
             android:layout_marginTop="2dp" />
 
-        <!-- Scan time sub-line -->
+        <!-- Sub-line: scan time or time slot (optional) -->
         <TextView
-            android:id="@+id/tvAttScanTime"
+            android:id="@+id/tvTimelineSubLine"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="🕐 Scanned at 8:05 AM"
+            android:text="Scanned at 8:05 AM"
             android:textColor="#94A3B8"
             android:textSize="11sp"
             android:visibility="gone"
-            app:layout_constraintStart_toEndOf="@id/tvAttMealIcon"
-            app:layout_constraintEnd_toStartOf="@id/tvAttBadge"
-            app:layout_constraintTop_toBottomOf="@id/tvAttMealType"
+            app:layout_constraintStart_toEndOf="@id/tvTimelineMealIcon"
+            app:layout_constraintEnd_toStartOf="@id/tvTimelineStatusBadge"
+            app:layout_constraintTop_toBottomOf="@id/tvTimelineMealType"
             app:layout_constraintBottom_toBottomOf="parent"
             android:layout_marginStart="10dp"
             android:layout_marginEnd="8dp"
             android:layout_marginTop="2dp"
             android:layout_marginBottom="2dp" />
 
-        <!-- Attended / Walk-in badge -->
+        <!-- Status badge -->
         <TextView
-            android:id="@+id/tvAttBadge"
+            android:id="@+id/tvTimelineStatusBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Attended"
             android:textSize="10sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF"
-            android:background="@drawable/bg_badge_blue"
+            android:background="@drawable/bg_badge_green"
             android:paddingHorizontal="10dp"
             android:paddingVertical="5dp"
             app:layout_constraintEnd_toEndOf="parent"
