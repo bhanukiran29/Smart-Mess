@@ -24,6 +24,9 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldPath;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -43,6 +46,13 @@ public class AdminActivity extends AppCompatActivity {
     private MaterialCardView btnManageMenu, btnViewFeedback, btnUserManagement, btnGenerateReport;
     private MaterialButton btnLogout;
     private BarChart wasteBarChart;
+
+    private List<ListenerRegistration> listenerRegistrations = new ArrayList<>();
+    private java.util.Map<String, Integer> bookingsMap = new java.util.HashMap<>();
+    private java.util.Map<String, List<Double>> ratingsMap = new java.util.HashMap<>();
+    private double todayWasteVal = 0.0;
+    private double yesterdayWasteVal = 0.0;
+    private int lastBookings = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,33 +152,168 @@ public class AdminActivity extends AppCompatActivity {
     }
 
     private void fetchKPIs() {
-        // Mock heavy DB calculations to match the prompt specifications for KPIs
+        // Clean up any existing listeners first
+        for (ListenerRegistration listener : listenerRegistrations) {
+            if (listener != null) {
+                listener.remove();
+            }
+        }
+        listenerRegistrations.clear();
+
+        // Set initial/fallback values to avoid placeholder visual lag
         tvKpiBookings.setText("0");
-        tvKpiWaste.setText("0");
+        tvKpiWaste.setText("0kg");
         tvKpiRating.setText("0.0");
+        tvKpiWasteDelta.setText("0kg vs y'day");
 
-        // 1. Bookings Target
-        int calculatedBookings = 145; // Placeholder for DB calculation
-        animateCountInt(tvKpiBookings, calculatedBookings, "");
+        // 1. Bookings Dynamic Target
+        bookingsMap.clear();
+        String[] meals = {"breakfast", "lunch", "snacks", "dinner"};
+        for (String meal : meals) {
+            ListenerRegistration lrBookings = db.collection("confirmations")
+                    .document(targetDate)
+                    .collection(meal)
+                    .whereEqualTo("status", "eat")
+                    .addSnapshotListener((snapshots, e) -> {
+                        if (e != null) {
+                            android.util.Log.e("AdminActivity", "Error listening to " + meal + " bookings", e);
+                            return;
+                        }
+                        int count = (snapshots != null) ? snapshots.size() : 0;
+                        bookingsMap.put(meal, count);
+                        updateBookingsUI();
+                    });
+            listenerRegistrations.add(lrBookings);
+        }
 
-        // 2. Avg Rating Target
-        double rating = 4.6;
-        ValueAnimator anim = ValueAnimator.ofFloat(0f, (float) rating);
-        anim.setDuration(1200);
-        anim.addUpdateListener(a -> tvKpiRating.setText(String.format(Locale.getDefault(), "%.1f", a.getAnimatedValue())));
-        anim.start();
+        // 2. Avg Rating Dynamic Target
+        ratingsMap.clear();
+        String todayDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        for (String meal : meals) {
+            ListenerRegistration lrRatings = db.collection("meal_ratings")
+                    .document(todayDate)
+                    .collection(meal)
+                    .addSnapshotListener((snapshots, e) -> {
+                        if (e != null) {
+                            android.util.Log.e("AdminActivity", "Error listening to " + meal + " ratings", e);
+                            return;
+                        }
+                        List<Double> list = new ArrayList<>();
+                        if (snapshots != null) {
+                            for (DocumentSnapshot doc : snapshots) {
+                                Double ratingVal = doc.getDouble("rating");
+                                if (ratingVal != null) {
+                                    list.add(ratingVal);
+                                }
+                            }
+                        }
+                        ratingsMap.put(meal, list);
+                        updateRatingsUI();
+                    });
+            listenerRegistrations.add(lrRatings);
+        }
 
-        // 3. Waste Delta
-        int wasteToday = 12;
-        int wasteYesterday = 18;
-        animateCountInt(tvKpiWaste, wasteToday, "kg");
+        // 3. Waste Dynamic Target
+        todayWasteVal = 0.0;
+        yesterdayWasteVal = 0.0;
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_YEAR, -1);
+        String yesterdayDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.getTime());
 
-        int diff = wasteToday - wasteYesterday;
+        // Listen to today's waste logs
+        ListenerRegistration lrTodayWaste = db.collection("waste_logs")
+                .whereGreaterThanOrEqualTo(FieldPath.documentId(), todayDate)
+                .whereLessThanOrEqualTo(FieldPath.documentId(), todayDate + "\uf8ff")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) {
+                        android.util.Log.e("AdminActivity", "Error listening to today's waste logs", e);
+                        return;
+                    }
+                    double total = 0.0;
+                    if (snapshots != null) {
+                        for (DocumentSnapshot doc : snapshots) {
+                            Double wasted = doc.getDouble("wastedKg");
+                            if (wasted != null) {
+                                total += wasted;
+                            }
+                        }
+                    }
+                    todayWasteVal = total;
+                    updateWasteUI();
+                });
+        listenerRegistrations.add(lrTodayWaste);
+
+        // Listen to yesterday's waste logs
+        ListenerRegistration lrYesterdayWaste = db.collection("waste_logs")
+                .whereGreaterThanOrEqualTo(FieldPath.documentId(), yesterdayDate)
+                .whereLessThanOrEqualTo(FieldPath.documentId(), yesterdayDate + "\uf8ff")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) {
+                        android.util.Log.e("AdminActivity", "Error listening to yesterday's waste logs", e);
+                        return;
+                    }
+                    double total = 0.0;
+                    if (snapshots != null) {
+                        for (DocumentSnapshot doc : snapshots) {
+                            Double wasted = doc.getDouble("wastedKg");
+                            if (wasted != null) {
+                                total += wasted;
+                            }
+                        }
+                    }
+                    yesterdayWasteVal = total;
+                    updateWasteUI();
+                });
+        listenerRegistrations.add(lrYesterdayWaste);
+    }
+
+    private void updateBookingsUI() {
+        int totalBookings = 0;
+        for (int count : bookingsMap.values()) {
+            totalBookings += count;
+        }
+        android.util.Log.d("AdminActivity", "CALC: Tomorrow's Bookings = " + totalBookings);
+        
+        if (totalBookings != lastBookings) {
+            animateCountInt(tvKpiBookings, totalBookings, "");
+            lastBookings = totalBookings;
+        } else {
+            tvKpiBookings.setText(String.valueOf(totalBookings));
+        }
+    }
+
+    private void updateRatingsUI() {
+        double sum = 0.0;
+        int count = 0;
+        for (List<Double> list : ratingsMap.values()) {
+            for (double r : list) {
+                sum += r;
+                count++;
+            }
+        }
+        double avg = count > 0 ? sum / count : 0.0;
+        android.util.Log.d("AdminActivity", "CALC: Today's Average Rating = " + avg + " (from " + count + " ratings)");
+        tvKpiRating.setText(String.format(Locale.getDefault(), "%.1f", avg));
+    }
+
+    private void updateWasteUI() {
+        android.util.Log.d("AdminActivity", "CALC: Waste Today = " + todayWasteVal + "kg, Yesterday = " + yesterdayWasteVal + "kg");
+        
+        if (todayWasteVal == (long) todayWasteVal) {
+            tvKpiWaste.setText(String.format(Locale.getDefault(), "%dkg", (long) todayWasteVal));
+        } else {
+            tvKpiWaste.setText(String.format(Locale.getDefault(), "%.1fkg", todayWasteVal));
+        }
+
+        double diff = todayWasteVal - yesterdayWasteVal;
         if (diff < 0) {
-            tvKpiWasteDelta.setText("↓ " + Math.abs(diff) + "kg vs y'day");
+            double absDiff = Math.abs(diff);
+            String diffStr = absDiff == (long) absDiff ? String.format(Locale.getDefault(), "%d", (long) absDiff) : String.format(Locale.getDefault(), "%.1f", absDiff);
+            tvKpiWasteDelta.setText("↓ " + diffStr + "kg vs y'day");
             tvKpiWasteDelta.setTextColor(Color.parseColor("#16A34A"));
         } else {
-            tvKpiWasteDelta.setText("↑ " + diff + "kg vs y'day");
+            String diffStr = diff == (long) diff ? String.format(Locale.getDefault(), "%d", (long) diff) : String.format(Locale.getDefault(), "%.1f", diff);
+            tvKpiWasteDelta.setText("↑ " + diffStr + "kg vs y'day");
             tvKpiWasteDelta.setTextColor(Color.parseColor("#EF4444"));
         }
     }
@@ -254,5 +399,16 @@ public class AdminActivity extends AppCompatActivity {
             Toast.makeText(this, "Error saving PDF: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
         document.close();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        for (ListenerRegistration listener : listenerRegistrations) {
+            if (listener != null) {
+                listener.remove();
+            }
+        }
+        listenerRegistrations.clear();
     }
 }
