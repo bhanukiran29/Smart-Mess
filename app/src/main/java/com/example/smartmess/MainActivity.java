@@ -308,6 +308,13 @@ public class MainActivity extends AppCompatActivity {
                 .document(userId)
                 .set(log);
 
+        // Dual write to user-specific subcollection to avoid collectionGroup index limitations
+        db.collection("user_attendance")
+                .document(userId)
+                .collection("records")
+                .document(mealDate + "_" + mealType)
+                .set(log);
+
         // Atomically increment the capacity counter so the live counter updates in real-time
         // We use SetOptions.merge() so it works even if Admin didn't manually set capacity for today.
         Map<String, Object> incrementData = new HashMap<>();

@@ -245,8 +245,9 @@ public class MealHistoryRepository {
         Log.d("PERFORMANCE", "Attendance query started for uid=" + userId);
 
         // Build the base query once — reused for both cache and server passes
-        Query baseQuery = db.collectionGroup("scanLogs")
-                .whereEqualTo("userId", userId)
+        Query baseQuery = db.collection("user_attendance")
+                .document(userId)
+                .collection("records")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .limit(ATTENDANCE_LIMIT);
 
@@ -356,15 +357,10 @@ public class MealHistoryRepository {
         List<AttendanceRecord> records = new ArrayList<>();
 
         for (QueryDocumentSnapshot doc : snap) {
-            // Path: scanLogs/{date}/{meal}/{userId}
-            // doc.getReference().getParent() = scanLogs/{date}/{meal}
-            // doc.getReference().getParent().getParent() = scanLogs/{date}
-            // doc.getReference().getParent().getId() = meal name
-            // doc.getReference().getParent().getParent().getId() = date string
-            String meal = doc.getReference().getParent().getId();
-            String date = doc.getReference().getParent().getParent() != null
-                    ? doc.getReference().getParent().getParent().getId()
-                    : "";
+            String meal = doc.getString("mealType");
+            String date = doc.getString("date");
+            if (meal == null) meal = "";
+            if (date == null) date = "";
 
             // Build human-readable day label from the date string
             String dayLabel = date;
@@ -374,13 +370,12 @@ public class MealHistoryRepository {
             } catch (Exception ignored) {}
 
             Boolean walkin  = doc.getBoolean("isWalkin");
-            String  mealTyp = doc.getString("mealType");
             long    tsMillis = extractTimestampMillis(doc.get("timestamp"));
 
             records.add(new AttendanceRecord(
                     date,
                     dayLabel,
-                    mealTyp != null ? mealTyp : meal,
+                    meal,
                     Boolean.TRUE.equals(walkin),
                     tsMillis
             ));
@@ -449,8 +444,9 @@ public class MealHistoryRepository {
                         confirmMap.put(date + "_" + mealType, r);
                     }
 
-                    Query attQuery = db.collectionGroup("scanLogs")
-                            .whereEqualTo("userId", userId)
+                    Query attQuery = db.collection("user_attendance")
+                            .document(userId)
+                            .collection("records")
                             .orderBy("timestamp", Query.Direction.DESCENDING)
                             .limit(200);
 
@@ -459,11 +455,9 @@ public class MealHistoryRepository {
 
                                 final Map<String, Long> scanMap = new HashMap<>();
                                 for (QueryDocumentSnapshot doc : scanSnap) {
-                                    String meal = doc.getReference().getParent().getId();
-                                    String date = doc.getReference().getParent().getParent() != null
-                                            ? doc.getReference().getParent().getParent().getId()
-                                            : "";
-                                    if (date.isEmpty() || meal.isEmpty()) continue;
+                                    String meal = doc.getString("mealType");
+                                    String date = doc.getString("date");
+                                    if (date == null || meal == null || date.isEmpty() || meal.isEmpty()) continue;
                                     if (!cutoffDate.isEmpty() && date.compareTo(cutoffDate) < 0)
                                         continue;
 
